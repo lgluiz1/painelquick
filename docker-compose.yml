@@ -5,7 +5,7 @@ services:
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "8025:8000"
     environment:
       - DB_NAME=st63136_capelao_quick
       - DB_USER=st63136_capelao_quick
