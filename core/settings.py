@@ -86,15 +86,17 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOWED_ORIGINS = [
-    "http://quickdelivery.com.br",
-    "https://quickdelivery.com.br",
-    "http://www.quickdelivery.com.br",
-    "https://www.quickdelivery.com.br",
-    "http://localhost",
-    "http://127.0.0.1",
-    "http://localhost:8025",
-    "http://127.0.0.1:8025",
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "authorization",
+    "content-type",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "x-api-key",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
