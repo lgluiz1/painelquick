@@ -1,0 +1,48 @@
+{% extends 'attendance/base.html' %}
+
+{% block title %}Dashboard - Quick Attendance{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h3 class="mb-4 text-danger fw-bold"><i class="bi bi-calendar-event me-2"></i>Lista de Reuniões</h3>
+        
+        <div class="card p-0 shadow-sm overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 py-3">Nome da Reunião (URL ID)</th>
+                            <th class="py-3">Criado em</th>
+                            <th class="py-3 text-center">Inscrições</th>
+                            <th class="pe-4 py-3 text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if meetings %}
+                            {% for meeting in meetings %}
+                                <tr>
+                                    <td class="ps-4 fw-bold text-dark">{{ meeting.title }}</td>
+                                    <td>{{ meeting.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger rounded-pill">{{ meeting.attendances.count }}</span>
+                                    </td>
+                                    <td class="pe-4 text-end">
+                                        <a href="{% url 'meeting_detail' meeting.pk %}" class="btn btn-sm btn-quick">
+                                            <i class="bi bi-eye-fill me-1"></i> Ver Mais
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">Aguardando os primeiros registros...</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

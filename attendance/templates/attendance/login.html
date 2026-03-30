@@ -1,0 +1,38 @@
+{% extends 'attendance/base.html' %}
+
+{% block title %}Login - Quick Attendance{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card p-4 mt-5">
+            <div class="text-center mb-4">
+                <img src="https://quickdelivery.com.br/wp-content/uploads/2025/09/logo-quick-delivery-solucoes-em-logistica.webp" style="max-width: 150px;">
+                <h3 class="text-danger fw-bold mt-2">Área do Capelão</h3>
+                <p class="text-muted">Acesse o painel de registros</p>
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Usuário</label>
+                    <input type="text" name="username" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Senha</label>
+                    <input type="password" name="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-quick w-100 py-2">Entrar</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if error %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        showModal('Erro no Login', '{{ error }}');
+    });
+</script>
+{% endif %}
+{% endblock %}

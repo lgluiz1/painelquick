@@ -1,0 +1,76 @@
+{% extends 'attendance/base.html' %}
+
+{% block title %}Detalhes da Reunião - {{ meeting.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary mb-3"><i class="bi bi-arrow-left me-1"></i> Voltar</a>
+        <h3 class="mb-4 text-danger fw-bold"><i class="bi bi-person-check me-2"></i>Inscritos: {{ meeting.title }}</h3>
+        
+        <div class="card p-4 shadow-sm">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Filial</th>
+                            <th>Data/Hora</th>
+                            <th class="text-center">Assinatura</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if attendances %}
+                            {% for attendance in attendances %}
+                                <tr>
+                                    <td class="fw-bold">{{ attendance.name }}</td>
+                                    <td>{{ attendance.branch }}</td>
+                                    <td>{{ attendance.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="showSignature('{{ attendance.signature }}')">
+                                            <i class="bi bi-border-style me-1"></i> Ver Assinatura
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">Nenhuma presença registrada ainda.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Signature -->
+<div class="modal fade" id="signatureModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assinatura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center bg-light">
+                <img id="signatureImg" src="" style="max-width: 100%; border-radius: 8px; border: 1px solid #ddd;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function showSignature(base64) {
+        document.getElementById('signatureImg').src = base64;
+        const modal = new bootstrap.Modal(document.getElementById('signatureModal'));
+        modal.show();
+    }
+</script>
+{% endblock %}
+
+{% endblock %}

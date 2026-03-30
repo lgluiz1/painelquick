@@ -1,0 +1,21 @@
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_NAME=st63136_capelao_quick
+      - DB_USER=st63136_capelao_quick
+      - DB_PASSWORD=9buWum6gxJUNKU2QbczZ
+      - DB_HOST=st63136.ispot.cc
+      - DB_PORT=3306
+      - SECRET_KEY=django-insecure-capelao-quick-2026
+      - DEBUG=True
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
