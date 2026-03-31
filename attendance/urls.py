@@ -14,6 +14,7 @@ urlpatterns = [
     path('portal/company/<slug:slug>/courses/<int:pk>/', views.portal_course_detail, name='portal_course_detail'),
     path('portal/company/<slug:slug>/complaints/', views.portal_complaints, name='portal_complaints'),
     path('portal/company/<slug:slug>/complaints/<int:pk>/', views.portal_complaint_detail, name='portal_complaint_detail'),
+    path('portal/company/<slug:slug>/download/<str:feature>/', views.download_template, name='download_template'),
 
     # --- PÁGINAS HOSPEDADAS (PÚBLICAS PARA EMPRESAS) ---
     path('p/<slug:company_slug>/<str:feature>/', views.hosted_form, name='hosted_form'),

@@ -6,6 +6,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login
 from django.utils.text import slugify
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
+import os
 from .models import (
     Company, Branch, Meeting, Attendance, Course, Evaluation, Question, 
     StudentResponse, StudentAnswer, Complaint, 
@@ -256,6 +258,53 @@ def portal_complaint_detail(request, slug, pk):
             complaint.save()
         return redirect('portal_complaint_detail', slug=slug, pk=pk)
     return render(request, 'attendance/portal_complaint_detail.html', {'company': complaint.company, 'complaint': complaint, 'updates': complaint.updates.all().order_by('created_at')})
+
+def download_template(request, slug, feature):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    company = get_object_or_404(Company, slug=slug)
+    
+    # Caminho do arquivo na raiz do projeto (fora da pasta backend)
+    # No Docker, a raiz pode estar em caminhos diferentes, mas tentaremos os padrões
+    file_map = {
+        'presenca': 'presenca.html',
+        'denuncia': 'denuncia.html',
+        'avaliacao': 'avaliacao.html'
+    }
+    
+    filename = file_map.get(feature)
+    if not filename: return HttpResponse("Tipo inválido", status=400)
+    
+    # Tenta localizar o arquivo
+    possible_paths = [
+        f"/app/../{filename}", # Docker path (assuming backend is in /app)
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), filename) # Local path
+    ]
+    
+    content = ""
+    for path in possible_paths:
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            break
+            
+    if not content:
+        return HttpResponse(f"Arquivo base {filename} não encontrado no servidor.", status=404)
+    
+    # SUBSTITUIÇÕES MÁGICAS:
+    # 1. Token da Empresa
+    content = content.replace('YOUR_X_API_KEY_HERE', company.api_token)
+    content = content.replace('TOKEN_AQUI', company.api_token) # Variável comum que podemos ter usado
+    
+    # 2. URL do Servidor (Baseado no seu domínio atual)
+    content = content.replace('http://localhost:8000', 'https://quickdelivery.luizgustavo.tech')
+    content = content.replace('https://seu-servidor.com', 'https://quickdelivery.luizgustavo.tech')
+    
+    # 3. Branding (Opcional, se o HTML suportar)
+    content = content.replace('#e63946', company.primary_color)
+    
+    response = HttpResponse(content, content_type='text/html')
+    response['Content-Disposition'] = f'attachment; filename="{feature}_{company.slug}.html"'
+    return response
 
 # --- PÁGINAS HOSPEDADAS ---
 

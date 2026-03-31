@@ -55,17 +55,33 @@
             <div class="list-group list-group-flush">
                 <div class="list-group-item px-0 border-0 mb-3">
                     <label class="small fw-bold text-muted mb-2">Lista de Presença</label>
-                    <div class="input-group input-group-sm">
+                    <div class="input-group input-group-sm mb-2">
                         <input type="text" class="form-control" value=".../p/{{ company.slug }}/presenca/" readonly>
                         <a href="{% url 'hosted_form' company.slug 'presenca' %}" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
                     </div>
+                    <a href="{% url 'download_template' company.slug 'presenca' %}" class="btn btn-sm btn-light w-100 border text-primary small">
+                        <i class="bi bi-download me-2"></i>Download HTML (TI Externo)
+                    </a>
                 </div>
                 <div class="list-group-item px-0 border-0 mb-3">
                     <label class="small fw-bold text-muted mb-2">Ouvidoria</label>
-                    <div class="input-group input-group-sm">
+                    <div class="input-group input-group-sm mb-2">
                         <input type="text" class="form-control" value=".../p/{{ company.slug }}/denuncia/" readonly>
                         <a href="{% url 'hosted_form' company.slug 'denuncia' %}" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
                     </div>
+                    <a href="{% url 'download_template' company.slug 'denuncia' %}" class="btn btn-sm btn-light w-100 border text-primary small">
+                        <i class="bi bi-download me-2"></i>Download HTML (TI Externo)
+                    </a>
+                </div>
+                <div class="list-group-item px-0 border-0 mb-3">
+                    <label class="small fw-bold text-muted mb-2">Avaliações</label>
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="text" class="form-control" value=".../p/{{ company.slug }}/avaliacao/" readonly>
+                        <a href="{% url 'hosted_form' company.slug 'avaliacao' %}" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
+                    </div>
+                    <a href="{% url 'download_template' company.slug 'avaliacao' %}" class="btn btn-sm btn-light w-100 border text-primary small">
+                        <i class="bi bi-download me-2"></i>Download HTML (TI Externo)
+                    </a>
                 </div>
             </div>
 
