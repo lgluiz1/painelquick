@@ -14,14 +14,7 @@
     <div class="col-md-3">
         <div class="card p-3 shadow-sm border-0 bg-white rounded-4 border">
             <h6 class="text-muted small mb-1">Empresas Ativas</h6>
-            <h2 class="mb-0 fw-bold">
-                {% with active_count=0 %}
-                    {% for c in companies %}{% if c.is_active %}{% increment active_count %}{% endif %}{% endfor %}
-                    {{ companies.all|dictsort:"is_active"|last|default_if_none:"0" }} 
-                    {# Simplificado para exibição direta via length se necessário, mas usaremos companies.count por enquanto #}
-                    {{ companies.count }}
-                {% endwith %}
-            </h2>
+            <h2 class="mb-0 fw-bold">{{ active_companies_count }}</h2>
         </div>
     </div>
 </div>

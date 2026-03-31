@@ -169,7 +169,10 @@ def portal_dashboard(request):
         elif action == 'delete_company':
             get_object_or_404(Company, id=request.POST.get('company_id')).delete()
         return redirect('portal_dashboard')
-    return render(request, 'attendance/portal_dashboard.html', {'companies': Company.objects.all().order_by('name')})
+    return render(request, 'attendance/portal_dashboard.html', {
+        'companies': Company.objects.all().order_by('name'),
+        'active_companies_count': Company.objects.filter(is_active=True).count()
+    })
 
 def portal_company_detail(request, slug):
     if not request.user.is_authenticated: return redirect('portal_login')
