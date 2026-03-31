@@ -3,7 +3,7 @@ import string
 import random
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login
 from django.utils.text import slugify
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import (
@@ -12,15 +12,7 @@ from .models import (
     ComplaintCategory, UrgencyLevel, ComplaintUpdate
 )
 
-# API KEYS (Legacy support or internal)
-PUBLIC_API_KEY = "QuickAttendance2026!#"
-ADMIN_TOKEN = "AdminQuickSession_f7e9a8b7c6d5e4f3a2b1" 
-
-def check_admin_auth(request):
-    auth_header = request.headers.get('Authorization')
-    if auth_header == f"Bearer {ADMIN_TOKEN}":
-        return True
-    return False
+# --- UTILITÁRIOS ---
 
 def get_company_by_token(request):
     token = request.headers.get('X-Api-Key')
@@ -37,7 +29,7 @@ def submit_attendance(request):
     
     company = get_company_by_token(request)
     if not company:
-        return JsonResponse({'error': 'Token de Empresa Inválido'}, status=401)
+        return JsonResponse({'error': 'Token de Empresa Inválido ou Inativa'}, status=401)
 
     try:
         data = json.loads(request.body)
@@ -50,8 +42,6 @@ def submit_attendance(request):
             return JsonResponse({'error': 'Dados incompletos'}, status=400)
 
         meeting, _ = Meeting.objects.get_or_create(company=company, title=reuniao_title)
-        
-        # Opcional: Registrar filial se não existir
         Branch.objects.get_or_create(company=company, name=branch_name)
 
         Attendance.objects.create(
@@ -74,16 +64,13 @@ def api_get_active_evaluation(request, course_slug):
         eval_active = course.evaluations.filter(is_active=True).first()
         
         if not eval_active:
-            return JsonResponse({'error': 'Nenhuma avaliação ativa disponível para este curso.'}, status=404)
+            return JsonResponse({'error': 'Nenhuma avaliação ativa disponível'}, status=404)
         
         data = {
             'id': eval_active.id,
             'title': eval_active.title,
             'course': course.title,
-            'questions': [{
-                'id': q.id,
-                'text': q.text
-            } for q in eval_active.questions.all()]
+            'questions': [{'id': q.id, 'text': q.text} for q in eval_active.questions.all()]
         }
         return JsonResponse(data)
     except Course.DoesNotExist:
@@ -104,21 +91,11 @@ def api_submit_evaluation(request):
         answers = data.get('answers', {}) 
         
         evaluation = Evaluation.objects.get(pk=eval_id, course__company=company)
-        
-        response = StudentResponse.objects.create(
-            evaluation=evaluation,
-            name=name,
-            branch=branch,
-            email=email
-        )
+        response = StudentResponse.objects.create(evaluation=evaluation, name=name, branch=branch, email=email)
         
         for q_id, text in answers.items():
             question = Question.objects.get(pk=q_id, evaluation=evaluation)
-            StudentAnswer.objects.create(
-                response=response,
-                question=question,
-                answer_text=text
-            )
+            StudentAnswer.objects.create(response=response, question=question, answer_text=text)
             
         return JsonResponse({'status': 'success'})
     except Exception as e:
@@ -134,32 +111,21 @@ def api_submit_complaint(request):
         data = json.loads(request.body)
         is_anon = data.get('is_anonymous', True)
         branch = data.get('branch')
-        category_id = data.get('category_id')
-        urgency_id = data.get('urgency_id')
         description = data.get('description')
 
         if not all([branch, description]):
-            return JsonResponse({'error': 'Filial e Descrição são obrigatórios.'}, status=400)
+            return JsonResponse({'error': 'Dados incompletos'}, status=400)
 
         ticket = 'TK-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-        while Complaint.objects.filter(ticket_id=ticket).exists():
-            ticket = 'TK-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
-        category = ComplaintCategory.objects.filter(id=category_id, company=company).first()
-        urgency = UrgencyLevel.objects.filter(id=urgency_id, company=company).first()
+        category = ComplaintCategory.objects.filter(id=data.get('category_id'), company=company).first()
+        urgency = UrgencyLevel.objects.filter(id=data.get('urgency_id'), company=company).first()
 
         Complaint.objects.create(
-            company=company,
-            ticket_id=ticket,
-            is_anonymous=is_anon,
+            company=company, ticket_id=ticket, is_anonymous=is_anon,
             name=data.get('name') if not is_anon else None,
             email=data.get('email') if not is_anon else None,
-            branch=branch,
-            category=category,
-            urgency=urgency,
-            description=description
+            branch=branch, category=category, urgency=urgency, description=description
         )
-
         return JsonResponse({'status': 'success', 'ticket_id': ticket})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -167,109 +133,117 @@ def api_submit_complaint(request):
 @csrf_exempt
 def api_complaint_options(request):
     company = get_company_by_token(request)
-    if not company:
-        return JsonResponse({'error': 'Token de Empresa Inválido'}, status=401)
-
-    categories = ComplaintCategory.objects.filter(company=company)
-    urgencies = UrgencyLevel.objects.filter(company=company)
-    branches = Branch.objects.filter(company=company)
-
+    if not company: return JsonResponse({'error': 'Invalid Token'}, status=401)
     return JsonResponse({
-        'categories': [{'id': c.id, 'name': c.name} for c in categories],
-        'urgencies': [{'id': u.id, 'name': u.name, 'color': u.color} for u in urgencies],
-        'branches': [{'id': b.id, 'name': b.name} for b in branches]
+        'categories': [{'id': c.id, 'name': c.name} for c in company.complaint_categories.all()],
+        'urgencies': [{'id': u.id, 'name': u.name, 'color': u.color} for u in company.urgency_levels.all()],
+        'branches': [{'id': b.id, 'name': b.name} for b in company.branches.all()]
     })
 
-# --- GESTÃO DE REUNIÕES E PRESENÇAS ---
+# --- PORTAL DO CAPELÃO (VISTAS PRINCIPAIS) ---
+
+@csrf_exempt
+def portal_login(request):
+    if request.method == 'POST':
+        user = authenticate(username=request.POST.get('username'), password=request.POST.get('password'))
+        if user:
+            login(request, user)
+            return redirect('portal_dashboard')
+        return render(request, 'attendance/portal_login.html', {'error': 'Acesso negado.'})
+    return render(request, 'attendance/portal_login.html')
+
+def portal_dashboard(request):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'create_company':
+            name = request.POST.get('name')
+            Company.objects.create(name=name, slug=request.POST.get('slug') or slugify(name))
+        elif action == 'update_company':
+            c = get_object_or_404(Company, id=request.POST.get('company_id'))
+            c.name = request.POST.get('name')
+            c.logo_url = request.POST.get('logo_url')
+            c.primary_color = request.POST.get('primary_color')
+            c.is_active = request.POST.get('is_active') == 'on'
+            c.save()
+        elif action == 'delete_company':
+            get_object_or_404(Company, id=request.POST.get('company_id')).delete()
+        return redirect('portal_dashboard')
+    return render(request, 'attendance/portal_dashboard.html', {'companies': Company.objects.all().order_by('name')})
+
+def portal_company_detail(request, slug):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    company = get_object_or_404(Company, slug=slug)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add_branch':
+            Branch.objects.create(company=company, name=request.POST.get('branch_name'))
+        elif action == 'update_settings':
+            company.logo_url = request.POST.get('logo_url')
+            company.primary_color = request.POST.get('primary_color')
+            company.save()
+        return redirect('portal_company_detail', slug=slug)
+    return render(request, 'attendance/portal_company.html', {
+        'company': company, 'meetings': company.meetings.all(),
+        'courses': company.courses.all(), 'complaints': company.complaints.all(),
+        'branches': company.branches.all()
+    })
+
+# --- GESTÃO DETALHADA ---
 
 def portal_meetings(request, slug):
     if not request.user.is_authenticated: return redirect('portal_login')
     company = get_object_or_404(Company, slug=slug)
-    
     if request.method == 'POST':
-        action = request.POST.get('action')
-        if action == 'delete_meeting':
-            meeting = get_object_or_404(Meeting, id=request.POST.get('meeting_id'), company=company)
-            meeting.delete()
-        elif action == 'create_meeting':
+        if request.POST.get('action') == 'delete_meeting':
+            get_object_or_404(Meeting, id=request.POST.get('meeting_id'), company=company).delete()
+        elif request.POST.get('action') == 'create_meeting':
             Meeting.objects.create(company=company, title=request.POST.get('title'))
         return redirect('portal_meetings', slug=slug)
-
-    meetings = company.meetings.all().order_by('-created_at')
-    return render(request, 'attendance/portal_meetings.html', {'company': company, 'meetings': meetings})
+    return render(request, 'attendance/portal_meetings.html', {'company': company, 'meetings': company.meetings.all().order_by('-created_at')})
 
 def portal_meeting_detail(request, slug, pk):
     if not request.user.is_authenticated: return redirect('portal_login')
-    company = get_object_or_404(Company, slug=slug)
-    meeting = get_object_or_404(Meeting, pk=pk, company=company)
-    
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        if action == 'delete_attendance':
-            attendance = get_object_or_404(Attendance, id=request.POST.get('attendance_id'), meeting=meeting)
-            attendance.delete()
+    meeting = get_object_or_404(Meeting, pk=pk, company__slug=slug)
+    if request.method == 'POST' and request.POST.get('action') == 'delete_attendance':
+        get_object_or_404(Attendance, id=request.POST.get('attendance_id'), meeting=meeting).delete()
         return redirect('portal_meeting_detail', slug=slug, pk=pk)
-
-    attendances = meeting.attendances.all().order_by('-created_at')
-    return render(request, 'attendance/portal_meeting_detail.html', {'company': company, 'meeting': meeting, 'attendances': attendances})
-
-# --- GESTÃO DE CURSOS E AVALIAÇÕES ---
+    return render(request, 'attendance/portal_meeting_detail.html', {'company': meeting.company, 'meeting': meeting, 'attendances': meeting.attendances.all().order_by('-created_at')})
 
 def portal_courses(request, slug):
     if not request.user.is_authenticated: return redirect('portal_login')
     company = get_object_or_404(Company, slug=slug)
-    
     if request.method == 'POST':
-        action = request.POST.get('action')
-        if action == 'delete_course':
-            course = get_object_or_404(Course, id=request.POST.get('course_id'), company=company)
-            course.delete()
-        elif action == 'create_course':
-            title = request.POST.get('title')
-            Course.objects.create(company=company, title=title, slug=slugify(title))
+        if request.POST.get('action') == 'delete_course':
+            get_object_or_404(Course, id=request.POST.get('course_id'), company=company).delete()
+        elif request.POST.get('action') == 'create_course':
+            t = request.POST.get('title')
+            Course.objects.create(company=company, title=t, slug=slugify(t))
         return redirect('portal_courses', slug=slug)
-
-    courses = company.courses.all().order_by('-created_at')
-    return render(request, 'attendance/portal_courses.html', {'company': company, 'courses': courses})
+    return render(request, 'attendance/portal_courses.html', {'company': company, 'courses': company.courses.all().order_by('-created_at')})
 
 def portal_course_detail(request, slug, pk):
     if not request.user.is_authenticated: return redirect('portal_login')
-    company = get_object_or_404(Company, slug=slug)
-    course = get_object_or_404(Course, pk=pk, company=company)
-    
+    course = get_object_or_404(Course, pk=pk, company__slug=slug)
     if request.method == 'POST':
-        action = request.POST.get('action')
-        if action == 'add_evaluation':
+        if request.POST.get('action') == 'add_evaluation':
             Evaluation.objects.create(course=course, title=request.POST.get('title'))
-        elif action == 'delete_evaluation':
-            eval = get_object_or_404(Evaluation, id=request.POST.get('evaluation_id'), course=course)
-            eval.delete()
+        elif request.POST.get('action') == 'delete_evaluation':
+            get_object_or_404(Evaluation, id=request.POST.get('evaluation_id'), course=course).delete()
         return redirect('portal_course_detail', slug=slug, pk=pk)
-
-    evaluations = course.evaluations.all().order_by('-created_at')
-    return render(request, 'attendance/portal_course_detail.html', {'company': company, 'course': course, 'evaluations': evaluations})
-
-# --- GESTÃO DE DENÚNCIAS ---
+    return render(request, 'attendance/portal_course_detail.html', {'company': course.company, 'course': course, 'evaluations': course.evaluations.all().order_by('-created_at')})
 
 def portal_complaints(request, slug):
     if not request.user.is_authenticated: return redirect('portal_login')
     company = get_object_or_404(Company, slug=slug)
-    
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        if action == 'delete_complaint':
-            complaint = get_object_or_404(Complaint, id=request.POST.get('complaint_id'), company=company)
-            complaint.delete()
+    if request.method == 'POST' and request.POST.get('action') == 'delete_complaint':
+        get_object_or_404(Complaint, id=request.POST.get('complaint_id'), company=company).delete()
         return redirect('portal_complaints', slug=slug)
-
-    complaints = company.complaints.all().order_by('-created_at')
-    return render(request, 'attendance/portal_complaints.html', {'company': company, 'complaints': complaints})
+    return render(request, 'attendance/portal_complaints.html', {'company': company, 'complaints': company.complaints.all().order_by('-created_at')})
 
 def portal_complaint_detail(request, slug, pk):
     if not request.user.is_authenticated: return redirect('portal_login')
-    company = get_object_or_404(Company, slug=slug)
-    complaint = get_object_or_404(Complaint, pk=pk, company=company)
-    
+    complaint = get_object_or_404(Complaint, pk=pk, company__slug=slug)
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'add_update':
@@ -278,23 +252,14 @@ def portal_complaint_detail(request, slug, pk):
             complaint.status = request.POST.get('status')
             complaint.save()
         return redirect('portal_complaint_detail', slug=slug, pk=pk)
+    return render(request, 'attendance/portal_complaint_detail.html', {'company': complaint.company, 'complaint': complaint, 'updates': complaint.updates.all().order_by('created_at')})
 
-    updates = complaint.updates.all().order_by('created_at')
-    return render(request, 'attendance/portal_complaint_detail.html', {'company': company, 'complaint': complaint, 'updates': updates})
-
-# --- PÁGINAS HOSPEDADAS (PÚBLICAS) ---
+# --- PÁGINAS HOSPEDADAS ---
 
 def hosted_form(request, company_slug, feature):
     company = get_object_or_404(Company, slug=company_slug)
-    
-    template_name = f'attendance/public_{feature}.html'
     context = {'company': company}
-    
-    if feature == 'presenca':
-        context['reuniao_id'] = request.GET.get('reuniao', 'Geral')
+    if feature == 'presenca': context['reuniao_id'] = request.GET.get('reuniao', 'Geral')
     elif feature == 'denuncia':
-        context['categories'] = company.complaint_categories.all()
-        context['urgencies'] = company.urgency_levels.all()
-        context['branches'] = company.branches.all()
-        
-    return render(request, template_name, context)
+        context.update({'categories': company.complaint_categories.all(), 'urgencies': company.urgency_levels.all(), 'branches': company.branches.all()})
+    return render(request, f'attendance/public_{feature}.html', context)
