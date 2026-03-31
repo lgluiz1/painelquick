@@ -79,33 +79,23 @@
     </div>
 </div>
 
-<!-- Modal Confirmação Exclusão -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-body p-4 text-center">
-                <i class="bi bi-exclamation-triangle text-danger display-1 mb-3"></i>
-                <h4 class="fw-bold">Tem certeza?</h4>
-                <p class="text-muted">Você está prestes a excluir a reunião "<span id="delName"></span>" e TODAS as assinaturas vinculadas a ela. Esta ação não pode ser desfeita.</p>
-                <form method="POST" id="deleteForm">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="delete_meeting">
-                    <input type="hidden" name="meeting_id" id="delId">
-                    <div class="d-flex gap-2 justify-content-center mt-4">
-                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-danger px-4">Excluir Tudo</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Modal Confirmação Exclusão Oculto (Formulário) -->
+<form method="POST" id="deleteMeetingForm" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete_meeting">
+    <input type="hidden" name="meeting_id" id="delId">
+</form>
 
 <script>
     function confirmDelete(id, name) {
-        document.getElementById('delId').value = id;
-        document.getElementById('delName').innerText = name;
-        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        uiConfirm(
+            'Excluir Reunião',
+            `ATENÇÃO: Isso excluirá permanentemente a reunião "${name}" e TODAS as assinaturas vinculadas. Continuar?`,
+            () => {
+                document.getElementById('delId').value = id;
+                document.getElementById('deleteMeetingForm').submit();
+            }
+        );
     }
 </script>
 {% endblock %}

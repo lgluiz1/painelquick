@@ -140,11 +140,13 @@
                 
                 <hr class="my-4">
                 
-                <form method="POST" onsubmit="return confirm('ATENÇÃO: Deletar a empresa apagará TODOS os dados permanentemente. Continuar?')">
+                <form method="POST" id="deleteCompanyForm">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="delete_company">
                     <input type="hidden" name="company_id" id="comp_id_delete">
-                    <button type="submit" class="btn btn-outline-danger w-100 py-2 border-0"><i class="bi bi-trash me-2"></i>Excluir Empresa Permanentemente</button>
+                    <button type="button" class="btn btn-outline-danger w-100 py-2 border-0" onclick="confirmDeleteCompany()">
+                        <i class="bi bi-trash me-2"></i>Excluir Empresa Permanentemente
+                    </button>
                 </form>
             </div>
         </div>
@@ -152,6 +154,13 @@
 </div>
 
 <script>
+    function confirmDeleteCompany() {
+        uiConfirm(
+            'Excluir Empresa', 
+            'ATENÇÃO: Deletar a empresa apagará TODOS os dados permanentemente. Esta ação não pode ser desfeita. Continuar?',
+            () => { document.getElementById('deleteCompanyForm').submit(); }
+        );
+    }
     const settingsModal = document.getElementById('settingsModal')
     settingsModal.addEventListener('show.bs.modal', event => {
         const button = event.relatedTarget

@@ -75,17 +75,39 @@
                 </div>
             </div>
 
-            <div id="successArea" class="d-none card p-5 text-center">
+            <div id="successArea" class="d-none card p-5 text-center shadow-lg border-0 rounded-5">
                 <i class="bi bi-check-circle-fill text-success display-1 mb-4"></i>
-                <h2 class="fw-bold">Avaliação Enviada!</h2>
-                <p class="text-muted">Agradecemos sinceramente o seu feedback. Ele é essencial para nossa melhoria contínua.</p>
-                <button class="btn btn-outline-primary rounded-pill px-4 mt-3" onclick="location.reload()">Novo Registro</button>
+                <h2 class="fw-bold text-success">Avaliação Enviada!</h2>
+                <p class="text-muted mb-4 px-md-5">Agradecemos sinceramente o seu feedback. Ele é essencial para nossa melhoria contínua e desenvolvimento institucional.</p>
+                <button class="btn btn-dark rounded-pill px-5 py-3 fw-bold shadow-sm" onclick="location.reload()">Preencher Novamente</button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Modal de Alerta -->
+<div class="modal fade" id="alertModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-body p-4 text-center">
+                <i class="bi bi-exclamation-circle text-warning display-4 mb-3"></i>
+                <h5 class="fw-bold mb-3" id="alertTitle">Ops!</h5>
+                <p class="text-muted mb-4" id="alertMessage"></p>
+                <button type="button" class="btn btn-dark rounded-pill px-5" data-bs-dismiss="modal">Entendido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    const alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
+    function showAlert(title, msg) {
+        document.getElementById('alertTitle').innerText = title;
+        document.getElementById('alertMessage').innerText = msg;
+        alertModal.show();
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const courseSlug = urlParams.get('curso');
     let currentEvalId = null;
@@ -126,7 +148,10 @@
                 `;
             });
 
-        } catch (err) { console.error(err); }
+        } catch (err) { 
+            console.error(err); 
+            showAlert("Erro de Carregamento", "Não foi possível carregar a avaliação.");
+        }
     }
 
     document.getElementById('submissionForm').onsubmit = async (e) => {
@@ -157,9 +182,11 @@
                 document.getElementById('evalFormArea').classList.add('d-none');
                 document.getElementById('successArea').classList.remove('d-none');
             } else {
-                alert('Erro ao enviar avaliação.');
+                showAlert("Erro ao Enviar", "Não foi possível enviar sua avaliação no momento.");
             }
-        } catch (err) { alert('Erro de conexão.'); }
+        } catch (err) { 
+            showAlert("Erro de Conexão", "Sem conexão com o servidor. Verifique sua internet.");
+        }
     };
 
     loadActiveEval();

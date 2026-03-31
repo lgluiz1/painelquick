@@ -91,9 +91,27 @@
             </div>
         </div>
 
-        <button class="btn btn-outline-danger w-100 py-3 shadow-sm" onclick="return confirm('ATENÇÃO: Excluir esta denúncia apagará todos os registros e atualizações. Continuar?')">
+        <form method="POST" id="deleteComplaintForm" style="display:none;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete_complaint">
+            <input type="hidden" name="complaint_id" value="{{ complaint.id }}">
+        </form>
+
+        <button type="button" class="btn btn-outline-danger w-100 py-3 shadow-sm rounded-4" onclick="confirmDeleteComplaint()">
             <i class="bi bi-trash me-2"></i>Excluir Denúncia permanentemente
         </button>
     </div>
 </div>
+
+<script>
+    function confirmDeleteComplaint() {
+        uiConfirm(
+            'Excluir Denúncia',
+            'ATENÇÃO: Isso excluirá permanentemente todos os registros, atualizações e históricos desta denúncia. Esta ação não pode ser desfeita. Continuar?',
+            () => {
+                document.getElementById('deleteComplaintForm').submit();
+            }
+        );
+    }
+</script>
 {% endblock %}

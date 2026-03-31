@@ -42,12 +42,9 @@
                                     </div>
                                 </td>
                                 <td class="pe-4 text-end">
-                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta assinatura?')">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="delete_attendance">
-                                        <input type="hidden" name="attendance_id" value="{{ attendance.id }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
-                                    </form>
+                                    <button type="button" class="btn btn-sm btn-outline-danger border-0 rounded-circle" onclick="confirmDeleteAttendance('{{ attendance.id }}', '{{ attendance.name }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </td>
                             </tr>
                             {% empty %}
@@ -62,6 +59,26 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Confirmação Exclusão Oculto -->
+<form method="POST" id="deleteAttendanceForm" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete_attendance">
+    <input type="hidden" name="attendance_id" id="delAttendanceId">
+</form>
+
+<script>
+    function confirmDeleteAttendance(id, name) {
+        uiConfirm(
+            'Excluir Assinatura',
+            `Deseja realmente remover permanentemente a assinatura de "${name}"?`,
+            () => {
+                document.getElementById('delAttendanceId').value = id;
+                document.getElementById('deleteAttendanceForm').submit();
+            }
+        );
+    }
+</script>
 
 <style>
     @media print {

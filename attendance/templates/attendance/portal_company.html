@@ -144,9 +144,32 @@
                     {% csrf_token %}
                     <input type="hidden" name="action" id="branchAction">
                     <input type="hidden" name="branch_id" id="branchId">
-                    <input type="hidden" name="new_name" id="branchNewName">
                 </form>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Específico para Editar Filial -->
+<div class="modal fade" id="editBranchModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Editar Nome da Filial</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit_branch">
+                <input type="hidden" name="branch_id" id="modalEditBranchId">
+                <div class="modal-body p-4">
+                    <label class="form-label small fw-bold mb-2">Novo Nome para esta Unidade</label>
+                    <input type="text" name="new_name" id="modalEditBranchName" class="form-control rounded-3" required>
+                </div>
+                <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm">Salvar Alteração</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -156,25 +179,26 @@
         var copyText = document.getElementById("apiToken");
         copyText.select();
         document.execCommand("copy");
-        alert("Token copiado!");
+        uiToast("Token copiado para a área de transferência! ✅");
     }
 
+    const editBranchModal = new bootstrap.Modal(document.getElementById('editBranchModal'));
     function editBranch(id, currentName) {
-        const newName = prompt("Editar nome da filial:", currentName);
-        if (newName && newName !== currentName) {
-            document.getElementById('branchAction').value = 'edit_branch';
-            document.getElementById('branchId').value = id;
-            document.getElementById('branchNewName').value = newName;
-            document.getElementById('branchActionForm').submit();
-        }
+        document.getElementById('modalEditBranchId').value = id;
+        document.getElementById('modalEditBranchName').value = currentName;
+        editBranchModal.show();
     }
 
     function deleteBranch(id, name) {
-        if (confirm(`Deseja realmente excluir a filial "${name}"?`)) {
-            document.getElementById('branchAction').value = 'delete_branch';
-            document.getElementById('branchId').value = id;
-            document.getElementById('branchActionForm').submit();
-        }
+        uiConfirm(
+            'Excluir Filial', 
+            `Deseja realmente remover a unidade "${name}"? Esta ação não pode ser desfeita.`,
+            () => {
+                document.getElementById('branchAction').value = 'delete_branch';
+                document.getElementById('branchId').value = id;
+                document.getElementById('branchActionForm').submit();
+            }
+        );
     }
 </script>
 {% endblock %}

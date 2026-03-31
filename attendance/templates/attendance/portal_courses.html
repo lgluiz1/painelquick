@@ -32,12 +32,9 @@
                 
                 <div class="mt-auto pt-3 d-flex gap-2 border-top">
                     <a href="{% url 'portal_course_detail' company.slug course.pk %}" class="btn btn-sm btn-outline-primary flex-grow-1">Gerenciar Módulos</a>
-                    <form method="POST" onsubmit="return confirm('ATENÇÃO: Isso excluirá o curso e TODAS as avaliações e respostas vinculadas. Confirmar?')">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="delete_course">
-                        <input type="hidden" name="course_id" value="{{ course.id }}">
-                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </form>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteCourse('{{ course.id }}', '{{ course.title }}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -74,4 +71,26 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Modal Confirmação Exclusão Oculto -->
+<form method="POST" id="deleteCourseForm" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete_course">
+    <input type="hidden" name="course_id" id="delCourseId">
+</form>
+
+<script>
+    function confirmDeleteCourse(id, name) {
+        uiConfirm(
+            'Excluir Curso',
+            `ATENÇÃO: Você está prestes a excluir o curso "${name}" e TODAS as avaliações vinculadas. Confirmar?`,
+            () => {
+                document.getElementById('delCourseId').value = id;
+                document.getElementById('deleteCourseForm').submit();
+            }
+        );
+    }
+</script>
 {% endblock %}

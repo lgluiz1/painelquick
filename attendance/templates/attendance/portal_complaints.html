@@ -48,14 +48,11 @@
                         </td>
                         <td class="small text-muted">{{ complaint.created_at|date:"d/m/Y H:i" }}</td>
                         <td class="pe-4 text-end">
-                            <div class="btn-group">
-                                <a href="{% url 'portal_complaint_detail' company.slug complaint.pk %}" class="btn btn-sm btn-outline-primary">Ver Relato</a>
-                                <form method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir permanentemente este relato?')">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="delete_complaint">
-                                    <input type="hidden" name="complaint_id" value="{{ complaint.id }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
-                                </form>
+                            <div class="btn-group gap-1">
+                                <a href="{% url 'portal_complaint_detail' company.slug complaint.pk %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Ver Relato</a>
+                                <button type="button" class="btn btn-sm btn-outline-danger border-0 rounded-circle" onclick="confirmDeleteComplaint('{{ complaint.id }}', '{{ complaint.ticket_id }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -69,4 +66,26 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Modal Confirmação Exclusão Oculto -->
+<form method="POST" id="deleteComplaintForm" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete_complaint">
+    <input type="hidden" name="complaint_id" id="delComplaintId">
+</form>
+
+<script>
+    function confirmDeleteComplaint(id, ticketId) {
+        uiConfirm(
+            'Excluir Relato',
+            `Deseja realmente excluir permanentemente o relato #${ticketId}? Esta ação não pode ser desfeita.`,
+            () => {
+                document.getElementById('delComplaintId').value = id;
+                document.getElementById('deleteComplaintForm').submit();
+            }
+        );
+    }
+</script>
 {% endblock %}
