@@ -1,0 +1,122 @@
+{% extends 'attendance/portal_base.html' %}
+
+{% block title %}Dashboard | Portal do Capelão{% endblock %}
+{% block header_title %}Painel de Empresas{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 bg-primary text-white">
+            <h6 class="text-white-50 small mb-1">Total de Empresas</h6>
+            <h2 class="mb-0 fw-bold">{{ companies.count }}</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 bg-white">
+            <h6 class="text-muted small mb-1">Empresas Ativas</h6>
+            <h2 class="mb-0 fw-bold">{{ companies.count }}</h2>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="fw-bold m-0"><i class="bi bi-building me-2"></i>Empresas Atendidas</h5>
+    <button class="btn btn-primary d-flex align-items-center shadow-sm" data-bs-toggle="modal" data-bs-target="#newCompanyModal">
+        <i class="bi bi-plus-lg me-2"></i>Nova Empresa
+    </button>
+</div>
+
+<div class="row g-4">
+    {% for company in companies %}
+    <div class="col-md-4">
+        <div class="card card-stat shadow-sm border-0 h-100 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="bg-light p-2 rounded">
+                    {% if company.logo_url %}
+                    <img src="{{ company.logo_url }}" style="max-height: 40px; max-width: 100px;">
+                    {% else %}
+                    <i class="bi bi-building fs-3 text-secondary"></i>
+                    {% endif %}
+                </div>
+                <span class="badge bg-success-subtle text-success px-3 py-2">Ativa</span>
+            </div>
+            <h5 class="fw-bold mb-1">{{ company.name }}</h5>
+            <p class="text-muted small mb-4">Integrada em {{ company.created_at|date:"d/m/Y" }}</p>
+            
+            <div class="d-flex gap-2 mt-auto">
+                <a href="{% url 'portal_company_detail' company.slug %}" class="btn btn-outline-primary flex-grow-1">Gerenciar</a>
+                <button class="btn btn-light"><i class="bi bi-gear"></i></button>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <p class="text-muted">Nenhuma empresa cadastrada ainda.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Nova Empresa -->
+<div class="modal fade" id="newCompanyModal" tabindex="-1">
+            <div class="mt-auto pt-4 border-top">
+                <h6 class="fw-bold small mb-3">Configurações Visuais</h6>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_settings">
+                    <div class="mb-2">
+                        <label class="small text-muted mb-1">URL do Logotipo</label>
+                        <input type="url" name="logo_url" class="form-control form-control-sm" value="{{ company.logo_url|default:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="small text-muted mb-1">Cor Primária</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="color" name="primary_color" class="form-control form-control-color" value="{{ company.primary_color|default:'#e63946' }}">
+                            <span class="small text-muted">Aplica-se às páginas públicas</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100">Salvar Branding</button>
+                </form>
+            </div>
+
+            <div class="mt-4 pt-4 border-top">
+                <h6 class="fw-bold small mb-3">Filiais Cadastradas</h6>
+                <ul class="list-unstyled small mb-3">
+                    {% for branch in branches %}
+                    <li class="mb-1"><i class="bi bi-geo-alt me-2"></i>{{ branch.name }}</li>
+                    {% empty %}
+                    <li class="text-muted italic">Nenhuma filial cadastrada.</li>
+                    {% endfor %}
+                </ul>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_branch">
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="branch_name" class="form-control" placeholder="Nova Filial..." required>
+                        <button type="submit" class="btn btn-outline-primary">Add</button>
+                    </div>
+                </form>
+            </div>
+ <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title">Cadastrar Empresa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+            <form id="newCompanyForm" method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Nome da Empresa</label>
+                    <input type="text" class="form-control" name="name" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Slug (URL amigável)</label>
+                    <input type="text" class="form-control" name="slug" placeholder="ex: quickdelivery">
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2 mt-3">Criar Empresa</button>
+            </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

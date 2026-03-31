@@ -1,20 +1,19 @@
 import json
-import secrets
 import string
 import random
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from django.utils.text import slugify
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import (
-    Meeting, Attendance, Course, Evaluation, Question, 
+    Company, Branch, Meeting, Attendance, Course, Evaluation, Question, 
     StudentResponse, StudentAnswer, Complaint, 
     ComplaintCategory, UrgencyLevel, ComplaintUpdate
 )
 
-# API KEYS
+# API KEYS (Legacy support or internal)
 PUBLIC_API_KEY = "QuickAttendance2026!#"
-# Persistent Token for active session (simplified for this case)
 ADMIN_TOKEN = "AdminQuickSession_f7e9a8b7c6d5e4f3a2b1" 
 
 def check_admin_auth(request):
@@ -23,31 +22,42 @@ def check_admin_auth(request):
         return True
     return False
 
-# --- API PRESENÇA ---
+def get_company_by_token(request):
+    token = request.headers.get('X-Api-Key')
+    if not token:
+        return None
+    return Company.objects.filter(api_token=token).first()
+
+# --- API PÚBLICA (COLETA DE DADOS - MULTI-TENANT) ---
+
 @csrf_exempt
 def submit_attendance(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
     
-    key = request.headers.get('X-Api-Key')
-    if key != PUBLIC_API_KEY:
-        return JsonResponse({'error': 'Unauthorized Public Key'}, status=401)
+    company = get_company_by_token(request)
+    if not company:
+        return JsonResponse({'error': 'Token de Empresa Inválido'}, status=401)
 
     try:
         data = json.loads(request.body)
         name = data.get('nome')
-        branch = data.get('filial')
+        branch_name = data.get('filial')
         reuniao_title = data.get('reuniaoId', 'Geral')
         signature = data.get('assinatura')
 
-        if not all([name, branch, reuniao_title, signature]):
+        if not all([name, branch_name, reuniao_title, signature]):
             return JsonResponse({'error': 'Dados incompletos'}, status=400)
 
-        meeting, _ = Meeting.objects.get_or_create(title=reuniao_title)
+        meeting, _ = Meeting.objects.get_or_create(company=company, title=reuniao_title)
+        
+        # Opcional: Registrar filial se não existir
+        Branch.objects.get_or_create(company=company, name=branch_name)
+
         Attendance.objects.create(
             meeting=meeting,
             name=name,
-            branch=branch,
+            branch=branch_name,
             signature=signature
         )
         return JsonResponse({'status': 'success', 'message': 'Presença registrada!'})
@@ -55,199 +65,11 @@ def submit_attendance(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
-def api_login(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required'}, status=405)
-    
-    try:
-        data = json.loads(request.body)
-        user = data.get('username')
-        passw = data.get('password')
-        
-        authenticated_user = authenticate(username=user, password=passw)
-        if authenticated_user:
-            return JsonResponse({
-                'status': 'success',
-                'token': ADMIN_TOKEN,
-                'username': authenticated_user.username
-            })
-        else:
-            return JsonResponse({'error': 'Usuário ou senha inválidos.'}, status=401)
-    except Exception as e:
-        return JsonResponse({'error': 'Erro ao processar login.'}, status=400)
-
-def api_meetings(request):
-    if not check_admin_auth(request):
-        return JsonResponse({'error': 'Não autorizado'}, status=401)
-    
-    meetings = Meeting.objects.all().order_by('-created_at')
-    data = [{
-        'id': m.id,
-        'title': m.title,
-        'created_at': m.created_at.strftime('%d/%m/%Y %H:%M'),
-        'count': m.attendances.count()
-    } for m in meetings]
-    return JsonResponse(data, safe=False)
-
-def api_meeting_detail(request, pk):
-    if not check_admin_auth(request):
-        return JsonResponse({'error': 'Não autorizado'}, status=401)
-    
-    try:
-        meeting = Meeting.objects.get(pk=pk)
-        attendances = meeting.attendances.all().order_by('-created_at')
-        data = {
-            'title': meeting.title,
-            'attendances': [{
-                'name': a.name,
-                'branch': a.branch,
-                'created_at': a.created_at.strftime('%d/%m/%Y %H:%M'),
-                'signature': a.signature
-            } for a in attendances]
-        }
-        return JsonResponse(data)
-    except Meeting.DoesNotExist:
-        return JsonResponse({'error': 'Reunião não encontrada'}, status=404)
-
-# --- API CURSOS E AVALIAÇÕES (ADMIN) ---
-
-@csrf_exempt
-def api_courses(request):
-    if not check_admin_auth(request):
-        return JsonResponse({'error': 'Não autorizado'}, status=401)
-    
-    if request.method == 'GET':
-        courses = Course.objects.all().order_by('title')
-        data = [{
-            'id': c.id,
-            'title': c.title,
-            'slug': c.slug,
-            'eval_count': c.evaluations.count()
-        } for c in courses]
-        return JsonResponse(data, safe=False)
-    
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        title = data.get('title')
-        if not title: return JsonResponse({'error': 'Título obrigatório'}, status=400)
-        
-        slug = slugify(title)
-        Course.objects.create(title=title, slug=slug)
-        return JsonResponse({'status': 'success'})
-
-@csrf_exempt
-def api_course_detail(request, slug):
-    if not check_admin_auth(request):
-        return JsonResponse({'error': 'Não autorizado'}, status=401)
-    
-    try:
-        course = Course.objects.get(slug=slug)
-        if request.method == 'GET':
-            evaluations = course.evaluations.all().order_by('-created_at')
-            data = {
-                'id': course.id,
-                'title': course.title,
-                'evaluations': [{
-                    'id': e.id,
-                    'title': e.title,
-                    'is_active': e.is_active,
-                    'resp_count': e.student_responses.count()
-                } for e in evaluations]
-            }
-            return JsonResponse(data)
-        
-        if request.method == 'POST':
-            data = json.loads(request.body)
-            Evaluation.objects.create(course=course, title=data.get('title'))
-            return JsonResponse({'status': 'success'})
-
-    except Course.DoesNotExist:
-        return JsonResponse({'error': 'Curso não encontrado'}, status=404)
-
-@csrf_exempt
-def api_evaluation_manage(request, pk):
-    if not check_admin_auth(request):
-        return JsonResponse({'error': 'Não autorizado'}, status=401)
-    
-    try:
-        evaluation = Evaluation.objects.get(pk=pk)
-        if request.method == 'GET':
-            questions = evaluation.questions.all()
-            responses = evaluation.student_responses.all().order_by('-created_at')
-            
-            data = {
-                'title': evaluation.title,
-                'course': evaluation.course.title,
-                'is_active': evaluation.is_active,
-                'questions': [{
-                    'id': q.id,
-                    'text': q.text,
-                    'order': q.order
-                } for q in questions],
-                'responses': [{
-                    'name': r.name,
-                    'branch': r.branch,
-                    'email': r.email,
-                    'created_at': r.created_at.strftime('%d/%m/%Y %H:%M'),
-                    'answers': [{
-                        'q': a.question.text,
-                        'a': a.answer_text
-                    } for a in r.answers.all()]
-                } for r in responses]
-            }
-            return JsonResponse(data)
-        
-        if request.method == 'POST':
-            data = json.loads(request.body)
-            action = data.get('action')
-            
-            if action == 'toggle_active':
-                if not evaluation.is_active:
-                    evaluation.course.evaluations.update(is_active=False)
-                    evaluation.is_active = True
-                else:
-                    evaluation.is_active = False
-                evaluation.save()
-                
-            elif action == 'add_question':
-                Question.objects.create(
-                    evaluation=evaluation,
-                    text=data.get('text'),
-                    order=evaluation.questions.count() + 1
-                )
-            return JsonResponse({'status': 'success'})
-            
-    except Evaluation.DoesNotExist:
-        return JsonResponse({'error': 'Avaliação não encontrada'}, status=404)
-
-# --- API PÚBLICA (ALUNOS) ---
-
-def api_get_active_evaluation(request, course_slug):
-    try:
-        course = Course.objects.get(slug=course_slug)
-        eval_active = course.evaluations.filter(is_active=True).first()
-        
-        if not eval_active:
-            return JsonResponse({'error': 'Nenhuma avaliação ativa disponível'}, status=404)
-        
-        data = {
-            'id': eval_active.id,
-            'title': eval_active.title,
-            'course': course.title,
-            'questions': [{
-                'id': q.id,
-                'text': q.text
-            } for q in eval_active.questions.all()]
-        }
-        return JsonResponse(data)
-    except Course.DoesNotExist:
-        return JsonResponse({'error': 'Curso não encontrado'}, status=404)
-
-@csrf_exempt
 def api_submit_evaluation(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required'}, status=405)
-    
+    company = get_company_by_token(request)
+    if not company:
+        return JsonResponse({'error': 'Token de Empresa Inválido'}, status=401)
+
     try:
         data = json.loads(request.body)
         eval_id = data.get('evaluation_id')
@@ -256,7 +78,7 @@ def api_submit_evaluation(request):
         email = data.get('email')
         answers = data.get('answers', {}) 
         
-        evaluation = Evaluation.objects.get(pk=eval_id)
+        evaluation = Evaluation.objects.get(pk=eval_id, course__company=company)
         
         response = StudentResponse.objects.create(
             evaluation=evaluation,
@@ -266,7 +88,7 @@ def api_submit_evaluation(request):
         )
         
         for q_id, text in answers.items():
-            question = Question.objects.get(pk=q_id)
+            question = Question.objects.get(pk=q_id, evaluation=evaluation)
             StudentAnswer.objects.create(
                 response=response,
                 question=question,
@@ -277,19 +99,15 @@ def api_submit_evaluation(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-
-# --- API OUVIDORIA / DENÚNCIAS ---
-
 @csrf_exempt
 def api_submit_complaint(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required'}, status=405)
-    
+    company = get_company_by_token(request)
+    if not company:
+        return JsonResponse({'error': 'Token de Empresa Inválido'}, status=401)
+
     try:
         data = json.loads(request.body)
         is_anon = data.get('is_anonymous', True)
-        name = data.get('name') if not is_anon else None
-        email = data.get('email') if not is_anon else None
         branch = data.get('branch')
         category_id = data.get('category_id')
         urgency_id = data.get('urgency_id')
@@ -298,136 +116,116 @@ def api_submit_complaint(request):
         if not all([branch, description]):
             return JsonResponse({'error': 'Filial e Descrição são obrigatórios.'}, status=400)
 
-        # Gerar Ticket ID único: QUICK-XXXXX
-        ticket = 'QUICK-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        ticket = 'TK-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         while Complaint.objects.filter(ticket_id=ticket).exists():
-            ticket = 'QUICK-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+            ticket = 'TK-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
-        category = ComplaintCategory.objects.filter(id=category_id).first() if category_id else None
-        urgency = UrgencyLevel.objects.filter(id=urgency_id).first() if urgency_id else None
+        category = ComplaintCategory.objects.filter(id=category_id, company=company).first()
+        urgency = UrgencyLevel.objects.filter(id=urgency_id, company=company).first()
 
-        complaint = Complaint.objects.create(
+        Complaint.objects.create(
+            company=company,
             ticket_id=ticket,
             is_anonymous=is_anon,
-            name=name,
-            email=email,
+            name=data.get('name') if not is_anon else None,
+            email=data.get('email') if not is_anon else None,
             branch=branch,
             category=category,
             urgency=urgency,
             description=description
         )
 
-        return JsonResponse({
-            'status': 'success',
-            'ticket_id': ticket,
-            'message': 'Denúncia enviada com sucesso!'
-        })
+        return JsonResponse({'status': 'success', 'ticket_id': ticket})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-def api_check_complaint(request, ticket_id):
-    try:
-        complaint = Complaint.objects.get(ticket_id=ticket_id)
-        updates = complaint.updates.all().order_by('created_at')
-        
-        return JsonResponse({
-            'ticket_id': complaint.ticket_id,
-            'status': complaint.get_status_display(),
-            'category': complaint.category.name if complaint.category else 'Não definida',
-            'urgency': complaint.urgency.name if complaint.urgency else 'Não definida',
-            'created_at': complaint.created_at.strftime('%d/%m/%Y %H:%M'),
-            'description': complaint.description,
-            'updates': [{
-                'message': u.message,
-                'created_at': u.created_at.strftime('%d/%m/%Y %H:%M'),
-                'is_admin': u.is_from_admin
-            } for u in updates]
-        })
-    except Complaint.DoesNotExist:
-        return JsonResponse({'error': 'Ticket não encontrado'}, status=404)
-
-@csrf_exempt
-def api_admin_complaints(request):
-    if not check_admin_auth(request):
-        return JsonResponse({'error': 'Não autorizado'}, status=401)
-    
-    complaints = Complaint.objects.all().order_by('-created_at')
-    data = [{
-        'id': c.id,
-        'ticket_id': c.ticket_id,
-        'status': c.status,
-        'status_display': c.get_status_display(),
-        'branch': c.branch,
-        'category': c.category.name if c.category else '---',
-        'urgency_color': c.urgency.color if c.urgency else '#6c757d',
-        'is_anonymous': c.is_anonymous,
-        'created_at': c.created_at.strftime('%d/%m/%Y %H:%M')
-    } for c in complaints]
-    return JsonResponse(data, safe=False)
-
-@csrf_exempt
-def api_admin_complaint_detail(request, pk):
-    if not check_admin_auth(request):
-        return JsonResponse({'error': 'Não autorizado'}, status=401)
-    
-    try:
-        complaint = Complaint.objects.get(pk=pk)
-        if request.method == 'GET':
-            updates = complaint.updates.all().order_by('created_at')
-            return JsonResponse({
-                'id': complaint.id,
-                'ticket_id': complaint.ticket_id,
-                'name': complaint.name if not complaint.is_anonymous else 'Anônimo',
-                'email': complaint.email if not complaint.is_anonymous else '---',
-                'branch': complaint.branch,
-                'description': complaint.description,
-                'status': complaint.status,
-                'category': complaint.category.name if complaint.category else '---',
-                'updates': [{
-                    'message': u.message,
-                    'created_at': u.created_at.strftime('%d/%m/%Y %H:%M'),
-                    'is_admin': u.is_from_admin
-                } for u in updates]
-            })
-        
-        if request.method == 'POST':
-            data = json.loads(request.body)
-            action = data.get('action')
-            
-            if action == 'add_update':
-                ComplaintUpdate.objects.create(
-                    complaint=complaint,
-                    message=data.get('message'),
-                    is_from_admin=True
-                )
-            elif action == 'update_status':
-                complaint.status = data.get('status')
-                complaint.save()
-                
-            return JsonResponse({'status': 'success'})
-            
-    except Complaint.DoesNotExist:
-        return JsonResponse({'error': 'Denúncia não encontrada'}, status=404)
-
 @csrf_exempt
 def api_complaint_options(request):
-    categories = ComplaintCategory.objects.all().order_by('name')
-    urgencies = UrgencyLevel.objects.all().order_by('id')
+    company = get_company_by_token(request)
+    if not company:
+        return JsonResponse({'error': 'Token de Empresa Inválido'}, status=401)
+
+    categories = ComplaintCategory.objects.filter(company=company)
+    urgencies = UrgencyLevel.objects.filter(company=company)
+    branches = Branch.objects.filter(company=company)
+
     return JsonResponse({
         'categories': [{'id': c.id, 'name': c.name} for c in categories],
-        'urgencies': [{'id': u.id, 'name': u.name, 'color': u.color} for u in urgencies]
+        'urgencies': [{'id': u.id, 'name': u.name, 'color': u.color} for u in urgencies],
+        'branches': [{'id': b.id, 'name': b.name} for b in branches]
     })
 
+# --- VISTAS DO PORTAL DO CAPELÃO (DJANGO TEMPLATES) ---
+
 @csrf_exempt
-def api_admin_complaint_config(request):
-    if not check_admin_auth(request):
-        return JsonResponse({'error': 'Não autorizado'}, status=401)
+def portal_login(request):
+    if request.method == 'POST':
+        user = request.POST.get('username')
+        passw = request.POST.get('password')
+        authenticated_user = authenticate(username=user, password=passw)
+        if authenticated_user:
+            from django.contrib.auth import login
+            login(request, authenticated_user)
+            return redirect('portal_dashboard')
+        else:
+            return render(request, 'attendance/portal_login.html', {'error': 'Usuário ou senha inválidos.'})
+    return render(request, 'attendance/portal_login.html')
+
+def portal_dashboard(request):
+    if not request.user.is_authenticated:
+        return redirect('portal_login')
+        
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        slug = request.POST.get('slug') or slugify(name)
+        Company.objects.create(name=name, slug=slug)
+        return redirect('portal_dashboard')
+
+    companies = Company.objects.all().order_by('name')
+    return render(request, 'attendance/portal_dashboard.html', {'companies': companies})
+
+def portal_company_detail(request, slug):
+    if not request.user.is_authenticated:
+        return redirect('portal_login')
+
+    company = get_object_or_404(Company, slug=slug)
     
     if request.method == 'POST':
-        data = json.loads(request.body)
-        target = data.get('target')
-        if target == 'category':
-            ComplaintCategory.objects.create(name=data.get('name'))
-        elif target == 'urgency':
-            UrgencyLevel.objects.create(name=data.get('name'), color=data.get('color', '#6c757d'))
-        return JsonResponse({'status': 'success'})
+        action = request.POST.get('action')
+        if action == 'add_branch':
+            Branch.objects.create(company=company, name=request.POST.get('branch_name'))
+        elif action == 'update_settings':
+            company.logo_url = request.POST.get('logo_url')
+            company.primary_color = request.POST.get('primary_color')
+            company.save()
+        return redirect('portal_company_detail', slug=slug)
+
+    meetings = company.meetings.all()
+    courses = company.courses.all()
+    complaints = company.complaints.all()
+    branches = company.branches.all()
+    
+    return render(request, 'attendance/portal_company.html', {
+        'company': company,
+        'meetings': meetings,
+        'courses': courses,
+        'complaints': complaints,
+        'branches': branches
+    })
+
+# --- PÁGINAS HOSPEDADAS (PÚBLICAS) ---
+
+def hosted_form(request, company_slug, feature):
+    company = get_object_or_404(Company, slug=company_slug)
+    
+    template_name = f'attendance/public_{feature}.html'
+    context = {'company': company}
+    
+    if feature == 'presenca':
+        context['reuniao_id'] = request.GET.get('reuniao', 'Geral')
+    elif feature == 'denuncia':
+        context['categories'] = company.complaint_categories.all()
+        context['urgencies'] = company.urgency_levels.all()
+        context['branches'] = company.branches.all()
+        
+    return render(request, template_name, context)

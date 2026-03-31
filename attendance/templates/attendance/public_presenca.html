@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Presença | {{ company.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root { --primary-color: {{ company.primary_color|default:"#e63946" }}; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; }
+        .header-bg { background-color: var(--primary-color); padding: 40px 20px; color: white; text-align: center; }
+        .btn-submit { background-color: var(--primary-color); color: white; border: none; padding: 12px; font-weight: bold; border-radius: 8px; width: 100%; transition: opacity 0.2s; }
+        .btn-submit:hover { opacity: 0.9; color: white; }
+        #signature-pad { border: 2px dashed #ccc; border-radius: 8px; background-color: #fff; cursor: crosshair; }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div id="form-container" class="card">
+                <div class="header-bg">
+                    {% if company.logo_url %}
+                    <img src="{{ company.logo_url }}" style="max-height: 50px; filter: brightness(0) invert(1);" class="mb-3">
+                    {% endif %}
+                    <h3 class="fw-bold m-0">Lista de Presença</h3>
+                    <p class="small opacity-75 mb-0">{{ company.name }}</p>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form id="attendanceForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nome Completo</label>
+                            <input type="text" id="nome" class="form-control" required placeholder="Digite seu nome">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Filial</label>
+                            <input type="text" id="filial" class="form-control" required placeholder="Sua filial">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Assinatura Digital</label>
+                            <canvas id="signature-pad" width="500" height="200" class="w-100"></canvas>
+                            <button type="button" class="btn btn-sm btn-link text-muted p-0 mt-1" onclick="clearPad()">Limpar Assinatura</button>
+                        </div>
+
+                        <input type="hidden" id="apiToken" value="{{ company.api_token }}">
+                        <input type="hidden" id="reuniaoId" value="{{ reuniao_id|default:'Geral' }}">
+
+                        <button type="submit" class="btn-submit">
+                            <span id="btnText">Confirmar Presença</span>
+                            <span id="btnLoading" class="spinner-border spinner-border-sm d-none"></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="success-msg" class="text-center d-none p-5">
+                <div class="display-1 text-success mb-4"><i class="bi bi-check-circle-fill"></i></div>
+                <h2 class="fw-bold">Presença Confirmada!</h2>
+                <p class="text-muted">Sua participação na reunião foi registrada com sucesso.</p>
+                <button class="btn btn-outline-secondary mt-3" onclick="location.reload()">Nova Assinatura</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<script>
+    const canvas = document.getElementById('signature-pad');
+    const signaturePad = new SignaturePad(canvas);
+
+    function clearPad() { signaturePad.clear(); }
+
+    document.getElementById('attendanceForm').onsubmit = async (e) => {
+        e.preventDefault();
+        if (signaturePad.isEmpty()) return alert("Por favor, assine no campo indicado.");
+
+        const btnText = document.getElementById('btnText');
+        const btnLoading = document.getElementById('btnLoading');
+        const token = document.getElementById('apiToken').value;
+
+        btnText.classList.add('d-none');
+        btnLoading.classList.remove('d-none');
+
+        const payload = {
+            nome: document.getElementById('nome').value,
+            filial: document.getElementById('filial').value,
+            reuniaoId: document.getElementById('reuniaoId').value,
+            assinatura: signaturePad.toDataURL()
+        };
+
+        try {
+            const res = await fetch('/api/submit-attendance/', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Api-Key': token
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (res.ok) {
+                document.getElementById('form-container').classList.add('d-none');
+                document.getElementById('success-msg').classList.remove('d-none');
+            } else {
+                alert("Erro ao enviar presença.");
+                btnText.classList.remove('d-none');
+                btnLoading.classList.add('d-none');
+            }
+        } catch (err) {
+            alert("Erro de conexão.");
+            btnText.classList.remove('d-none');
+            btnLoading.classList.add('d-none');
+        }
+    };
+</script>
+</body>
+</html>

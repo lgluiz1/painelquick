@@ -1,0 +1,100 @@
+{% extends 'attendance/portal_base.html' %}
+
+{% block title %}{{ company.name }} | Portal do Capelão{% endblock %}
+{% block header_title %}{{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-8">
+        <div class="card p-4 shadow-sm border-0 bg-white mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold m-0"><i class="bi bi-code-square me-2 text-primary"></i>Integração e Token</h5>
+                <span class="badge bg-light text-dark border p-2 small">SaaS Ativo</span>
+            </div>
+            <div class="bg-light p-3 rounded mb-3 border">
+                <label class="text-muted small fw-bold mb-2">TOKEN DE API ÚNICO (X-API-KEY)</label>
+                <div class="input-group">
+                    <input type="text" class="form-control font-monospace text-danger border-0 bg-transparent fw-bold" value="{{ company.api_token }}" readonly id="apiToken">
+                    <button class="btn btn-outline-secondary border-0" onclick="copyToken()"><i class="bi bi-clipboard"></i></button>
+                </div>
+            </div>
+            <p class="small text-muted mb-0">Use este Token para integrar o sistema no site da empresa ou nos links hospedados abaixo.</p>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card p-4 shadow-sm border-0 bg-white text-center">
+                    <i class="bi bi-calendar-check fs-2 text-primary mb-2"></i>
+                    <h2 class="fw-bold mb-0">{{ meetings.count }}</h2>
+                    <p class="text-muted small">Reuniões</p>
+                    <a href="#" class="btn btn-sm btn-light">Gerenciar</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-4 shadow-sm border-0 bg-white text-center">
+                    <i class="bi bi-book fs-2 text-success mb-2"></i>
+                    <h2 class="fw-bold mb-0">{{ courses.count }}</h2>
+                    <p class="text-muted small">Cursos</p>
+                    <a href="#" class="btn btn-sm btn-light">Gerenciar</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-4 shadow-sm border-0 bg-white text-center">
+                    <i class="bi bi-megaphone fs-2 text-danger mb-2"></i>
+                    <h2 class="fw-bold mb-0">{{ complaints.count }}</h2>
+                    <p class="text-muted small">Denúncias</p>
+                    <a href="#" class="btn btn-sm btn-light">Gerenciar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-4 shadow-sm border-0 bg-white h-100">
+            <h5 class="fw-bold mb-4"><i class="bi bi-link-45deg me-2 text-primary"></i>Links Hospedados</h5>
+            <p class="text-muted small mb-4">Envie estes links se a empresa não possuir site próprio:</p>
+            
+            <div class="list-group list-group-flush">
+                <div class="list-group-item px-0 border-0 mb-3">
+                    <label class="small fw-bold text-uppercase text-muted mb-2">Lista de Presença</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" value="https://quickdelivery.luizgustavo.tech/p/{{ company.slug }}/presenca/" readonly>
+                        <a href="{% url 'hosted_form' company.slug 'presenca' %}" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
+                    </div>
+                </div>
+                <div class="list-group-item px-0 border-0 mb-3">
+                    <label class="small fw-bold text-uppercase text-muted mb-2">Canal de Denúncia</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" value="https://quickdelivery.luizgustavo.tech/p/{{ company.slug }}/denuncia/" readonly>
+                        <a href="{% url 'hosted_form' company.slug 'denuncia' %}" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
+                    </div>
+                </div>
+                <div class="list-group-item px-0 border-0 mb-3">
+                    <label class="small fw-bold text-uppercase text-muted mb-2">Avaliações</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" value="https://quickdelivery.luizgustavo.tech/p/{{ company.slug }}/avaliacao/" readonly>
+                        <a href="{% url 'hosted_form' company.slug 'avaliacao' %}" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-4 border-top">
+                <h6 class="fw-bold small mb-3">Configurações Visuais</h6>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle border" style="width: 30px; height: 30px; background-color: {{ company.primary_color }};"></div>
+                    <span class="small text-muted">Cor Primária</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyToken() {
+        var copyText = document.getElementById("apiToken");
+        copyText.select();
+        document.execCommand("copy");
+        alert("Token copiado!");
+    }
+</script>
+{% endblock %}

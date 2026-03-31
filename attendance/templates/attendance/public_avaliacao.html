@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaliação | {{ company.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root { --primary-color: {{ company.primary_color|default:"#e63946" }}; }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .header-bg { background-color: var(--primary-color); padding: 40px; color: white; border-radius: 12px 12px 0 0; }
+        .btn-submit { background-color: var(--primary-color); color: white; border: none; padding: 12px; font-weight: bold; border-radius: 8px; width: 100%; }
+        .question-card { border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .question-card:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div id="form-container" class="card">
+                <div class="header-bg text-center">
+                    {% if company.logo_url %}
+                    <img src="{{ company.logo_url }}" style="max-height: 50px; filter: brightness(0) invert(1);" class="mb-3">
+                    {% endif %}
+                    <h3 class="fw-bold m-0" id="evalTitle">Carregando Avaliação...</h3>
+                    <p class="small opacity-75 mb-0" id="courseTitle">---</p>
+                </div>
+                
+                <div class="card-body p-4 p-md-5">
+                    <form id="evaluationForm">
+                        <div class="row mb-4 bg-light p-3 rounded g-3 border">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Seu Nome Completo</label>
+                                <input type="text" id="nome" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Seu E-mail</label>
+                                <input type="email" id="email" class="form-control" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold small">Sua Filial</label>
+                                <input type="text" id="filial" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div id="questionsContainer" class="mb-4"></div>
+
+                        <input type="hidden" id="apiToken" value="{{ company.api_token }}">
+                        <input type="hidden" id="evalId">
+
+                        <button type="submit" class="btn-submit">Enviar Respostas Agora</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="success-msg" class="text-center d-none card p-5 shadow-lg">
+                <h1 class="display-1 text-success mb-4"><i class="bi bi-award"></i></h1>
+                <h2 class="fw-bold">Avaliação Concluída!</h2>
+                <p class="text-muted fs-5">Suas respostas foram registradas no sistema.</p>
+                <button class="btn btn-outline-secondary mt-3" onclick="location.reload()">Preencher Novamente</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CONFIG = {
+        API_URL: '/api'
+    };
+
+    async function loadEvaluation() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseSlug = urlParams.get('curso') || 'gestores';
+        const token = document.getElementById('apiToken').value;
+
+        try {
+            const res = await fetch(`${CONFIG.API_URL}/active-evaluation/${courseSlug}/`, {
+                headers: { 'X-Api-Key': token }
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                document.getElementById('evalId').value = data.id;
+                document.getElementById('evalTitle').innerText = data.title;
+                document.getElementById('courseTitle').innerText = data.course;
+
+                const container = document.getElementById('questionsContainer');
+                data.questions.forEach(q => {
+                    container.innerHTML += `
+                        <div class="question-card">
+                            <h6 class="fw-bold mb-3">${q.text}</h6>
+                            <textarea class="form-control" name="q_${q.id}" rows="3" required placeholder="Escreva sua resposta aqui..."></textarea>
+                        </div>
+                    `;
+                });
+            } else {
+                alert("Nenhuma avaliação ativa encontrada.");
+            }
+        } catch (err) { alert("Erro ao carregar avaliação."); }
+    }
+
+    document.getElementById('evaluationForm').onsubmit = async (e) => {
+        e.preventDefault();
+        
+        const token = document.getElementById('apiToken').value;
+        const answers = {};
+        const form = e.target;
+        
+        const formData = new FormData(form);
+        for (const [key, value] of formData.entries()) {
+            if (key.startsWith('q_')) answers[key.split('_')[1]] = value;
+        }
+
+        const payload = {
+            evaluation_id: document.getElementById('evalId').value,
+            nome: document.getElementById('nome').value,
+            email: document.getElementById('email').value,
+            filial: document.getElementById('filial').value,
+            answers: answers
+        };
+
+        try {
+            const res = await fetch(`${CONFIG.API_URL}/submit-evaluation/`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Api-Key': token
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (res.ok) {
+                document.getElementById('form-container').classList.add('d-none');
+                document.getElementById('success-msg').classList.remove('d-none');
+            } else {
+                alert("Erro ao enviar respostas.");
+            }
+        } catch (err) { alert("Erro de conexão."); }
+    };
+
+    loadEvaluation();
+</script>
+</body>
+</html>

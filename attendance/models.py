@@ -1,7 +1,44 @@
 from django.db import models
+import secrets
+
+class Company(models.Model):
+    name = models.CharField(max_length=255, verbose_name="Nome da Empresa")
+    slug = models.SlugField(max_length=255, unique=True)
+    api_token = models.CharField(max_length=100, unique=True, blank=True)
+    
+    # Customização
+    logo_url = models.URLField(max_length=500, null=True, blank=True)
+    primary_color = models.CharField(max_length=20, default="#e63946")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.api_token:
+            self.api_token = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Empresa"
+        verbose_name_plural = "Empresas"
+
+class Branch(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='branches')
+    name = models.CharField(max_length=100, verbose_name="Nome da Filial")
+
+    def __str__(self):
+        return f"{self.company.name} - {self.name}"
+
+    class Meta:
+        verbose_name = "Filial"
+        verbose_name_plural = "Filiais"
+        unique_together = ('company', 'name')
 
 class Meeting(models.Model):
-    title = models.CharField(max_length=255, unique=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='meetings', null=True)
+    title = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -14,7 +51,7 @@ class Meeting(models.Model):
 class Attendance(models.Model):
     meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, related_name='attendances')
     name = models.CharField(max_length=255)
-    branch = models.CharField(max_length=100)
+    branch = models.CharField(max_length=100) # Mantido como texto para compatibilidade, mas pode vir do model Branch
     signature = models.TextField()  # Store Base64 string
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -28,8 +65,9 @@ class Attendance(models.Model):
 # --- Novos modelos para Cursos e Avaliações ---
 
 class Course(models.Model):
-    title = models.CharField(max_length=255, unique=True, verbose_name="Título do Curso")
-    slug = models.SlugField(max_length=255, unique=True, verbose_name="Slug (URL)")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='courses', null=True)
+    title = models.CharField(max_length=255, verbose_name="Título do Curso")
+    slug = models.SlugField(max_length=255, verbose_name="Slug (URL)")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -38,6 +76,7 @@ class Course(models.Model):
     class Meta:
         verbose_name = "Curso"
         verbose_name_plural = "Cursos"
+        unique_together = ('company', 'slug')
 
 class Evaluation(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='evaluations')
@@ -94,7 +133,8 @@ class StudentAnswer(models.Model):
 # --- Novos modelos para Ouvidoria (Denúncias) ---
 
 class ComplaintCategory(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='complaint_categories', null=True)
+    name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
@@ -102,13 +142,18 @@ class ComplaintCategory(models.Model):
     class Meta:
         verbose_name = "Categoria de Denúncia"
         verbose_name_plural = "Categorias de Denúncias"
+        unique_together = ('company', 'name')
 
 class UrgencyLevel(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='urgency_levels', null=True)
+    name = models.CharField(max_length=50)
     color = models.CharField(max_length=20, default="#6c757d") # CSS Color (Ex: #dc3545)
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        unique_together = ('company', 'name')
 
 class Complaint(models.Model):
     STATUS_CHOICES = [
@@ -118,6 +163,7 @@ class Complaint(models.Model):
         ('arquivado', 'Arquivado'),
     ]
 
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='complaints', null=True)
     ticket_id = models.CharField(max_length=20, unique=True) # Ex: QUICK-XXXXX
     category = models.ForeignKey(ComplaintCategory, on_delete=models.SET_NULL, null=True, blank=True)
     urgency = models.ForeignKey(UrgencyLevel, on_delete=models.SET_NULL, null=True, blank=True)
