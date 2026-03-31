@@ -64,6 +64,31 @@ def submit_attendance(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+def api_get_active_evaluation(request, course_slug):
+    company = get_company_by_token(request)
+    if not company:
+        return JsonResponse({'error': 'Token de Empresa Inválido'}, status=401)
+        
+    try:
+        course = Course.objects.get(company=company, slug=course_slug)
+        eval_active = course.evaluations.filter(is_active=True).first()
+        
+        if not eval_active:
+            return JsonResponse({'error': 'Nenhuma avaliação ativa disponível para este curso.'}, status=404)
+        
+        data = {
+            'id': eval_active.id,
+            'title': eval_active.title,
+            'course': course.title,
+            'questions': [{
+                'id': q.id,
+                'text': q.text
+            } for q in eval_active.questions.all()]
+        }
+        return JsonResponse(data)
+    except Course.DoesNotExist:
+        return JsonResponse({'error': 'Curso não encontrado'}, status=404)
+
 @csrf_exempt
 def api_submit_evaluation(request):
     company = get_company_by_token(request)
