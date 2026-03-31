@@ -3,145 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avaliação | {{ company.name }}</title>
+    <title>Avaliação de Curso | {{ company.name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        :root { --primary-color: {{ company.primary_color|default:"#e63946" }}; }
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
-        .card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        .header-bg { background-color: var(--primary-color); padding: 40px; color: white; border-radius: 12px 12px 0 0; }
-        .btn-submit { background-color: var(--primary-color); color: white; border: none; padding: 12px; font-weight: bold; border-radius: 8px; width: 100%; }
-        .question-card { border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
-        .question-card:last-child { border-bottom: none; }
+        :root { --primary-color: {{ company.primary_color|default:'#e63946' }}; }
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
+        .card { border: none; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); overflow: hidden; }
+        .header-brand { background-color: var(--primary-color); color: white; padding: 40px 20px; text-align: center; }
+        .question-item { border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 25px; }
+        .question-item:last-child { border-bottom: none; }
+        .btn-submit { background-color: var(--primary-color); color: white; font-weight: bold; border-radius: 10px; padding: 15px; border: none; width: 100%; transition: 0.3s; }
+        .btn-submit:hover { opacity: 0.9; filter: brightness(1.1); color: white; transform: translateY(-2px); }
     </style>
 </head>
 <body>
 
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div id="form-container" class="card">
-                <div class="header-bg text-center">
-                    {% if company.logo_url %}
-                    <img src="{{ company.logo_url }}" style="max-height: 50px; filter: brightness(0) invert(1);" class="mb-3">
-                    {% endif %}
-                    <h3 class="fw-bold m-0" id="evalTitle">Carregando Avaliação...</h3>
-                    <p class="small opacity-75 mb-0" id="courseTitle">---</p>
+        <div class="col-md-7">
+            <div id="contentLoading" class="text-center py-5">
+                <div class="spinner-border text-danger" role="status"></div>
+                <p class="mt-2 text-muted">Carregando formulário...</p>
+            </div>
+
+            <div id="noEvalArea" class="d-none text-center py-5 card">
+                <div class="p-5">
+                    <h3 class="text-danger fw-bold">Avaliação Indisponível</h3>
+                    <p class="text-muted">Não há uma avaliação ativa para este curso no momento.</p>
                 </div>
-                
-                <div class="card-body p-4 p-md-5">
-                    <form id="evaluationForm">
-                        <div class="row mb-4 bg-light p-3 rounded g-3 border">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold small">Seu Nome Completo</label>
-                                <input type="text" id="nome" class="form-control" required>
+            </div>
+
+            <div id="evalFormArea" class="d-none card mb-5">
+                <div class="header-brand">
+                    {% if company.logo_url %}
+                    <img src="{{ company.logo_url }}" style="max-height: 80px; filter: brightness(0) invert(1);" class="mb-3">
+                    {% else %}
+                    <img src="https://quickdelivery.com.br/wp-content/uploads/2025/09/logo-quick-delivery-solucoes-em-logistica.webp" style="max-height: 60px; filter: brightness(0) invert(1);" class="mb-3">
+                    {% endif %}
+                    <h3 class="fw-bold m-0" id="evalTitleDisplay">Avaliação</h3>
+                    <p class="small opacity-75 mt-1 mb-0" id="courseNameDisplay">{{ company.name }}</p>
+                </div>
+
+                <div class="p-4 p-md-5">
+                    <form id="submissionForm">
+                        <div class="row mb-4">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Nome Completo</label>
+                                <input type="text" id="nome" class="form-control bg-light border-0" placeholder="Seu nome" required>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold small">Seu E-mail</label>
-                                <input type="email" id="email" class="form-control" required>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Sua Unidade (Filial)</label>
+                                <select id="filial" class="form-select bg-light border-0" required>
+                                    <option value="">Selecione...</option>
+                                    {% for branch in branches %}
+                                    <option value="{{ branch.name }}">{{ branch.name }}</option>
+                                    {% empty %}
+                                    <option value="Geral">Unidade Única</option>
+                                    {% endfor %}
+                                </select>
                             </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold small">Sua Filial</label>
-                                <input type="text" id="filial" class="form-control" required>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Email</label>
+                                <input type="email" id="email" class="form-control bg-light border-0" placeholder="seu@email.com" required>
                             </div>
                         </div>
 
-                        <div id="questionsContainer" class="mb-4"></div>
+                        <div id="questionsContainer"></div>
 
-                        <input type="hidden" id="apiToken" value="{{ company.api_token }}">
-                        <input type="hidden" id="evalId">
-
-                        <button type="submit" class="btn-submit">Enviar Respostas Agora</button>
+                        <button type="submit" class="btn-submit shadow-sm mt-3">Enviar Avaliação</button>
                     </form>
                 </div>
             </div>
 
-            <div id="success-msg" class="text-center d-none card p-5 shadow-lg">
-                <h1 class="display-1 text-success mb-4"><i class="bi bi-award"></i></h1>
-                <h2 class="fw-bold">Avaliação Concluída!</h2>
-                <p class="text-muted fs-5">Suas respostas foram registradas no sistema.</p>
-                <button class="btn btn-outline-secondary mt-3" onclick="location.reload()">Preencher Novamente</button>
+            <div id="successArea" class="d-none card p-5 text-center">
+                <i class="bi bi-check-circle-fill text-success display-1 mb-4"></i>
+                <h2 class="fw-bold">Avaliação Enviada!</h2>
+                <p class="text-muted">Agradecemos sinceramente o seu feedback. Ele é essencial para nossa melhoria contínua.</p>
+                <button class="btn btn-outline-primary rounded-pill px-4 mt-3" onclick="location.reload()">Novo Registro</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const CONFIG = {
-        API_URL: '/api'
-    };
+    const urlParams = new URLSearchParams(window.location.search);
+    const courseSlug = urlParams.get('curso');
+    let currentEvalId = null;
 
-    async function loadEvaluation() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const courseSlug = urlParams.get('curso') || 'gestores';
-        const token = document.getElementById('apiToken').value;
+    async function loadActiveEval() {
+        if (!courseSlug) {
+            document.getElementById('contentLoading').classList.add('d-none');
+            document.getElementById('noEvalArea').classList.remove('d-none');
+            return;
+        }
 
         try {
-            const res = await fetch(`${CONFIG.API_URL}/active-evaluation/${courseSlug}/`, {
-                headers: { 'X-Api-Key': token }
+            const res = await fetch(`/api/active-evaluation/${courseSlug}/`, {
+                headers: { 'X-Api-Key': '{{ company.api_token }}' }
             });
             const data = await res.json();
             
-            if (res.ok) {
-                document.getElementById('evalId').value = data.id;
-                document.getElementById('evalTitle').innerText = data.title;
-                document.getElementById('courseTitle').innerText = data.course;
-
-                const container = document.getElementById('questionsContainer');
-                data.questions.forEach(q => {
-                    container.innerHTML += `
-                        <div class="question-card">
-                            <h6 class="fw-bold mb-3">${q.text}</h6>
-                            <textarea class="form-control" name="q_${q.id}" rows="3" required placeholder="Escreva sua resposta aqui..."></textarea>
-                        </div>
-                    `;
-                });
-            } else {
-                alert("Nenhuma avaliação ativa encontrada.");
+            document.getElementById('contentLoading').classList.add('d-none');
+            
+            if (!res.ok) {
+                document.getElementById('noEvalArea').classList.remove('d-none');
+                return;
             }
-        } catch (err) { alert("Erro ao carregar avaliação."); }
+
+            currentEvalId = data.id;
+            document.getElementById('evalTitleDisplay').innerText = data.title;
+            document.getElementById('courseNameDisplay').innerText = data.course;
+            document.getElementById('evalFormArea').classList.remove('d-none');
+
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+            data.questions.forEach(q => {
+                container.innerHTML += `
+                    <div class="question-item">
+                        <label class="form-label fw-bold small text-muted text-uppercase mb-2">${q.text}</label>
+                        <textarea class="form-control bg-light border-0 question-input" data-qid="${q.id}" rows="3" required placeholder="Sua resposta..."></textarea>
+                    </div>
+                `;
+            });
+
+        } catch (err) { console.error(err); }
     }
 
-    document.getElementById('evaluationForm').onsubmit = async (e) => {
+    document.getElementById('submissionForm').onsubmit = async (e) => {
         e.preventDefault();
-        
-        const token = document.getElementById('apiToken').value;
         const answers = {};
-        const form = e.target;
-        
-        const formData = new FormData(form);
-        for (const [key, value] of formData.entries()) {
-            if (key.startsWith('q_')) answers[key.split('_')[1]] = value;
-        }
+        document.querySelectorAll('.question-input').forEach(input => {
+            answers[input.dataset.qid] = input.value;
+        });
 
         const payload = {
-            evaluation_id: document.getElementById('evalId').value,
+            evaluation_id: currentEvalId,
             nome: document.getElementById('nome').value,
-            email: document.getElementById('email').value,
             filial: document.getElementById('filial').value,
+            email: document.getElementById('email').value,
             answers: answers
         };
 
         try {
-            const res = await fetch(`${CONFIG.API_URL}/submit-evaluation/`, {
+            const res = await fetch('/api/submit-evaluation/', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'X-Api-Key': token
+                    'X-Api-Key': '{{ company.api_token }}'
                 },
                 body: JSON.stringify(payload)
             });
-            
             if (res.ok) {
-                document.getElementById('form-container').classList.add('d-none');
-                document.getElementById('success-msg').classList.remove('d-none');
+                document.getElementById('evalFormArea').classList.add('d-none');
+                document.getElementById('successArea').classList.remove('d-none');
             } else {
-                alert("Erro ao enviar respostas.");
+                alert('Erro ao enviar avaliação.');
             }
-        } catch (err) { alert("Erro de conexão."); }
+        } catch (err) { alert('Erro de conexão.'); }
     };
 
-    loadEvaluation();
+    loadActiveEval();
 </script>
 </body>
 </html>

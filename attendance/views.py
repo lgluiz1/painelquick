@@ -312,6 +312,8 @@ def download_template(request, slug, feature):
     
     # 3. Branding (Opcional, se o HTML suportar)
     content = content.replace('#e63946', company.primary_color)
+    if company.logo_url:
+        content = content.replace('https://quickdelivery.com.br/wp-content/uploads/2025/09/logo-quick-delivery-solucoes-em-logistica.webp', company.logo_url)
     
     response = HttpResponse(content, content_type='text/html')
     response['Content-Disposition'] = f'attachment; filename="{feature}_{company.slug}.html"'
@@ -321,8 +323,20 @@ def download_template(request, slug, feature):
 
 def hosted_form(request, company_slug, feature):
     company = get_object_or_404(Company, slug=company_slug)
-    context = {'company': company}
-    if feature == 'presenca': context['reuniao_id'] = request.GET.get('reuniao', 'Geral')
+    context = {
+        'company': company,
+        'branches': company.branches.all()
+    }
+    
+    if feature == 'presenca': 
+        context['reuniao_id'] = request.GET.get('id', 'Geral')
     elif feature == 'denuncia':
-        context.update({'categories': company.complaint_categories.all(), 'urgencies': company.urgency_levels.all(), 'branches': company.branches.all()})
+        context.update({
+            'categories': company.complaint_categories.all(),
+            'urgencies': company.urgency_levels.all()
+        })
+    elif feature == 'avaliacao':
+        # Carregado via JS no template para suportar o curso dinâmico
+        pass
+        
     return render(request, f'attendance/public_{feature}.html', context)
