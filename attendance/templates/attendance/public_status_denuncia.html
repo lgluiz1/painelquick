@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acompanhamento de Relato | {{ company.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root { --primary-color: {{ company.primary_color|default:'#e63946' }}; }
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
+        .card { border: none; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); overflow: hidden; }
+        .header-brand { background-color: var(--primary-color); color: white; padding: 40px 20px; text-align: center; }
+        .btn-check-status { background-color: var(--primary-color); color: white; font-weight: bold; border-radius: 10px; padding: 12px; border: none; width: 100%; transition: 0.3s; }
+        .btn-check-status:hover { opacity: 0.9; filter: brightness(1.1); color: white; transform: translateY(-2px); }
+        .status-badge { font-size: 0.9rem; padding: 8px 15px; border-radius: 50px; font-weight: bold; }
+        .response-box { background-color: white; border-left: 5px solid var(--primary-color); padding: 20px; border-radius: 0 10px 10px 0; margin-top: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="header-brand">
+                    {% if company.logo_url %}
+                    <img src="{{ company.logo_url }}" style="max-height: 80px; filter: brightness(0) invert(1);" class="mb-3">
+                    {% else %}
+                    <img src="https://quickdelivery.com.br/wp-content/uploads/2025/09/logo-quick-delivery-solucoes-em-logistica.webp" style="max-height: 60px; filter: brightness(0) invert(1);" class="mb-3">
+                    {% endif %}
+                    <h3 class="fw-bold m-0 text-uppercase">Acompanhamento</h3>
+                    <p class="small opacity-75 mt-1 mb-0">Canal de Ouvidoria Segura</p>
+                </div>
+
+                <div class="p-4 p-md-5">
+                    <p class="text-center text-muted mb-4 small">Insira o código gerado no momento do seu relato para verificar o andamento e a resposta do Capelão.</p>
+                    
+                    <form id="statusForm">
+                        <div class="mb-3">
+                            <input type="text" id="ticketId" class="form-control form-control-lg text-center fw-bold border-0 bg-light" placeholder="EX: QD-2026-XXXX" required>
+                        </div>
+                        <button type="submit" class="btn-check-status shadow-sm">Consultar Protocolo</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Area de Resultado -->
+            <div id="resultArea" class="d-none">
+                <div class="card p-4">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                        <div>
+                            <span class="small text-muted text-uppercase">Status Atual:</span>
+                            <div class="mt-1"><span id="statusLabel" class="status-badge bg-light text-danger">...</span></div>
+                        </div>
+                        <div class="text-end">
+                            <span class="small text-muted text-uppercase">Data do Relato:</span>
+                            <div class="fw-bold" id="createdAtLabel">...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="response-box">
+                        <label class="small fw-bold text-muted text-uppercase mb-2 d-block">Resposta do Capelão:</label>
+                        <p class="mb-0 italic text-dark" id="responseText">...</p>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        <button class="btn btn-sm btn-link text-muted text-decoration-none" onclick="location.reload()">Fazer nova consulta</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="errorArea" class="d-none alert alert-danger border-0 shadow-sm text-center">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> Código não encontrado. Verifique se digitou corretamente.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('statusForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const ticketId = document.getElementById('ticketId').value;
+        const resultArea = document.getElementById('resultArea');
+        const errorArea = document.getElementById('errorArea');
+
+        resultArea.classList.add('d-none');
+        errorArea.classList.add('d-none');
+
+        try {
+            const res = await fetch(`/api/complaints/status/?ticket_id=${ticketId}`, {
+                headers: { 'X-Api-Key': '{{ company.api_token }}' }
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                document.getElementById('statusLabel').innerText = data.status;
+                document.getElementById('createdAtLabel').innerText = data.created_at;
+                document.getElementById('responseText').innerText = data.response;
+                resultArea.classList.remove('d-none');
+            } else {
+                errorArea.classList.remove('d-none');
+            }
+        } catch (err) {
+            alert('Erro de conexão com o servidor.');
+        }
+    };
+</script>
+</body>
+</html>

@@ -104,6 +104,24 @@ def api_submit_evaluation(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
+def api_get_complaint_status(request):
+    company = get_company_by_token(request)
+    if not company: return JsonResponse({'error': 'Token Inválido'}, status=401)
+    
+    ticket_id = request.GET.get('ticket_id')
+    if not ticket_id: return JsonResponse({'error': 'Código obrigatório'}, status=400)
+    
+    try:
+        complaint = company.complaints.get(ticket_id=ticket_id)
+        return JsonResponse({
+            'status': complaint.get_status_display(),
+            'created_at': complaint.created_at.strftime('%d/%m/%Y'),
+            'response': complaint.response or "Seu relato está sendo analisado com todo sigilo pelo Capelão."
+        })
+    except Complaint.DoesNotExist:
+        return JsonResponse({'error': 'Código não encontrado ou não pertence a esta empresa.'}, status=404)
+
+@csrf_exempt
 def api_submit_complaint(request):
     company = get_company_by_token(request)
     if not company:
@@ -330,7 +348,7 @@ def hosted_form(request, company_slug, feature):
     
     if feature == 'presenca': 
         context['reuniao_id'] = request.GET.get('id', 'Geral')
-    elif feature == 'denuncia':
+    elif feature == 'denuncia' or feature == 'status_denuncia':
         context.update({
             'categories': company.complaint_categories.all(),
             'urgencies': company.urgency_levels.all()

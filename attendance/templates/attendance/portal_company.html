@@ -74,6 +74,13 @@
                     </a>
                 </div>
                 <div class="list-group-item px-0 border-0 mb-3">
+                    <label class="small fw-bold text-muted mb-2">Acompanhamento de Denúncia</label>
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="text" class="form-control" value=".../p/{{ company.slug }}/status_denuncia/" readonly>
+                        <a href="{% url 'hosted_form' company.slug 'status_denuncia' %}" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
+                    </div>
+                </div>
+                <div class="list-group-item px-0 border-0 mb-3">
                     <label class="small fw-bold text-muted mb-2">Avaliações</label>
                     <div class="input-group input-group-sm mb-2">
                         <input type="text" class="form-control" value=".../p/{{ company.slug }}/avaliacao/" readonly>
