@@ -1,0 +1,93 @@
+{% extends 'attendance/portal_base.html' %}
+
+{% block title %}Módulos | {{ course.title }}{% endblock %}
+{% block header_title %}Gerenciar Módulos - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb m-0">
+            <li class="breadcrumb-item"><a href="{% url 'portal_company_detail' company.slug %}">{{ company.name }}</a></li>
+            <li class="breadcrumb-item text-muted"><a href="{% url 'portal_courses' company.slug %}">Cursos</a></li>
+            <li class="breadcrumb-item active">{{ course.title }}</li>
+        </ol>
+    </nav>
+    <button class="btn btn-primary d-flex align-items-center shadow-sm" data-bs-toggle="modal" data-bs-target="#newEvalModal">
+        <i class="bi bi-plus-lg me-2"></i>Novo Módulo/Prova
+    </button>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3">Nome do Módulo</th>
+                        <th class="py-3">Status</th>
+                        <th class="py-3">Respostas</th>
+                        <th class="py-3">Criado em</th>
+                        <th class="py-3 pe-4 text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for eval in evaluations %}
+                    <tr>
+                        <td class="ps-4 fw-bold">{{ eval.title }}</td>
+                        <td>
+                            {% if eval.is_active %}
+                            <span class="badge bg-success-subtle text-success rounded-pill px-3">Ativo para Alunos</span>
+                            {% else %}
+                            <span class="badge bg-light text-muted rounded-pill px-3">Rascunho/Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ eval.student_responses.count }} envios</span>
+                        </td>
+                        <td class="small text-muted">{{ eval.created_at|date:"d/m/Y" }}</td>
+                        <td class="pe-4 text-end">
+                            <div class="btn-group">
+                                <a href="#" class="btn btn-sm btn-outline-primary">Questões & Respostas</a>
+                                <form method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir este módulo e todos os resultados?')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete_evaluation">
+                                    <input type="hidden" name="evaluation_id" value="{{ eval.id }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">Este curso ainda não possui módulos de avaliação.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Módulo -->
+<div class="modal fade" id="newEvalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Novo Módulo de Avaliação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_evaluation">
+                    <div class="mb-3">
+                        <label class="form-label font-bold small">Título do Módulo/Prova</label>
+                        <input type="text" class="form-control" name="title" required placeholder="Ex: Avaliação Final Módulo 1">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-3 shadow-sm fw-bold">Salvar Módulo</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

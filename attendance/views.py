@@ -26,7 +26,7 @@ def get_company_by_token(request):
     token = request.headers.get('X-Api-Key')
     if not token:
         return None
-    return Company.objects.filter(api_token=token).first()
+    return Company.objects.filter(api_token=token, is_active=True).first()
 
 # --- API PÚBLICA (COLETA DE DADOS - MULTI-TENANT) ---
 
@@ -180,63 +180,107 @@ def api_complaint_options(request):
         'branches': [{'id': b.id, 'name': b.name} for b in branches]
     })
 
-# --- VISTAS DO PORTAL DO CAPELÃO (DJANGO TEMPLATES) ---
+# --- GESTÃO DE REUNIÕES E PRESENÇAS ---
 
-@csrf_exempt
-def portal_login(request):
-    if request.method == 'POST':
-        user = request.POST.get('username')
-        passw = request.POST.get('password')
-        authenticated_user = authenticate(username=user, password=passw)
-        if authenticated_user:
-            from django.contrib.auth import login
-            login(request, authenticated_user)
-            return redirect('portal_dashboard')
-        else:
-            return render(request, 'attendance/portal_login.html', {'error': 'Usuário ou senha inválidos.'})
-    return render(request, 'attendance/portal_login.html')
-
-def portal_dashboard(request):
-    if not request.user.is_authenticated:
-        return redirect('portal_login')
-        
-    if request.method == 'POST':
-        name = request.POST.get('name')
-        slug = request.POST.get('slug') or slugify(name)
-        Company.objects.create(name=name, slug=slug)
-        return redirect('portal_dashboard')
-
-    companies = Company.objects.all().order_by('name')
-    return render(request, 'attendance/portal_dashboard.html', {'companies': companies})
-
-def portal_company_detail(request, slug):
-    if not request.user.is_authenticated:
-        return redirect('portal_login')
-
+def portal_meetings(request, slug):
+    if not request.user.is_authenticated: return redirect('portal_login')
     company = get_object_or_404(Company, slug=slug)
     
     if request.method == 'POST':
         action = request.POST.get('action')
-        if action == 'add_branch':
-            Branch.objects.create(company=company, name=request.POST.get('branch_name'))
-        elif action == 'update_settings':
-            company.logo_url = request.POST.get('logo_url')
-            company.primary_color = request.POST.get('primary_color')
-            company.save()
-        return redirect('portal_company_detail', slug=slug)
+        if action == 'delete_meeting':
+            meeting = get_object_or_404(Meeting, id=request.POST.get('meeting_id'), company=company)
+            meeting.delete()
+        elif action == 'create_meeting':
+            Meeting.objects.create(company=company, title=request.POST.get('title'))
+        return redirect('portal_meetings', slug=slug)
 
-    meetings = company.meetings.all()
-    courses = company.courses.all()
-    complaints = company.complaints.all()
-    branches = company.branches.all()
+    meetings = company.meetings.all().order_by('-created_at')
+    return render(request, 'attendance/portal_meetings.html', {'company': company, 'meetings': meetings})
+
+def portal_meeting_detail(request, slug, pk):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    company = get_object_or_404(Company, slug=slug)
+    meeting = get_object_or_404(Meeting, pk=pk, company=company)
     
-    return render(request, 'attendance/portal_company.html', {
-        'company': company,
-        'meetings': meetings,
-        'courses': courses,
-        'complaints': complaints,
-        'branches': branches
-    })
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'delete_attendance':
+            attendance = get_object_or_404(Attendance, id=request.POST.get('attendance_id'), meeting=meeting)
+            attendance.delete()
+        return redirect('portal_meeting_detail', slug=slug, pk=pk)
+
+    attendances = meeting.attendances.all().order_by('-created_at')
+    return render(request, 'attendance/portal_meeting_detail.html', {'company': company, 'meeting': meeting, 'attendances': attendances})
+
+# --- GESTÃO DE CURSOS E AVALIAÇÕES ---
+
+def portal_courses(request, slug):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    company = get_object_or_404(Company, slug=slug)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'delete_course':
+            course = get_object_or_404(Course, id=request.POST.get('course_id'), company=company)
+            course.delete()
+        elif action == 'create_course':
+            title = request.POST.get('title')
+            Course.objects.create(company=company, title=title, slug=slugify(title))
+        return redirect('portal_courses', slug=slug)
+
+    courses = company.courses.all().order_by('-created_at')
+    return render(request, 'attendance/portal_courses.html', {'company': company, 'courses': courses})
+
+def portal_course_detail(request, slug, pk):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    company = get_object_or_404(Company, slug=slug)
+    course = get_object_or_404(Course, pk=pk, company=company)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add_evaluation':
+            Evaluation.objects.create(course=course, title=request.POST.get('title'))
+        elif action == 'delete_evaluation':
+            eval = get_object_or_404(Evaluation, id=request.POST.get('evaluation_id'), course=course)
+            eval.delete()
+        return redirect('portal_course_detail', slug=slug, pk=pk)
+
+    evaluations = course.evaluations.all().order_by('-created_at')
+    return render(request, 'attendance/portal_course_detail.html', {'company': company, 'course': course, 'evaluations': evaluations})
+
+# --- GESTÃO DE DENÚNCIAS ---
+
+def portal_complaints(request, slug):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    company = get_object_or_404(Company, slug=slug)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'delete_complaint':
+            complaint = get_object_or_404(Complaint, id=request.POST.get('complaint_id'), company=company)
+            complaint.delete()
+        return redirect('portal_complaints', slug=slug)
+
+    complaints = company.complaints.all().order_by('-created_at')
+    return render(request, 'attendance/portal_complaints.html', {'company': company, 'complaints': complaints})
+
+def portal_complaint_detail(request, slug, pk):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    company = get_object_or_404(Company, slug=slug)
+    complaint = get_object_or_404(Complaint, pk=pk, company=company)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add_update':
+            ComplaintUpdate.objects.create(complaint=complaint, message=request.POST.get('message'), is_from_admin=True)
+        elif action == 'update_status':
+            complaint.status = request.POST.get('status')
+            complaint.save()
+        return redirect('portal_complaint_detail', slug=slug, pk=pk)
+
+    updates = complaint.updates.all().order_by('created_at')
+    return render(request, 'attendance/portal_complaint_detail.html', {'company': company, 'complaint': complaint, 'updates': updates})
 
 # --- PÁGINAS HOSPEDADAS (PÚBLICAS) ---
 

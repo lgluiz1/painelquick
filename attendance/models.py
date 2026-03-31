@@ -9,6 +9,7 @@ class Company(models.Model):
     # Customização
     logo_url = models.URLField(max_length=500, null=True, blank=True)
     primary_color = models.CharField(max_length=20, default="#e63946")
+    is_active = models.BooleanField(default=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
 

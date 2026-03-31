@@ -1,0 +1,77 @@
+{% extends 'attendance/portal_base.html' %}
+
+{% block title %}Cursos | {{ company.name }}{% endblock %}
+{% block header_title %}Cursos de Capacitação - {{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb m-0">
+            <li class="breadcrumb-item"><a href="{% url 'portal_company_detail' company.slug %}">{{ company.name }}</a></li>
+            <li class="breadcrumb-item active">Cursos</li>
+        </ol>
+    </nav>
+    <button class="btn btn-primary d-flex align-items-center shadow-sm" data-bs-toggle="modal" data-bs-target="#newCourseModal">
+        <i class="bi bi-plus-lg me-2"></i>Novo Curso
+    </button>
+</div>
+
+<div class="row g-4">
+    {% for course in courses %}
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="bg-primary-subtle text-primary p-2 rounded">
+                        <i class="bi bi-book fs-3"></i>
+                    </div>
+                    <span class="badge bg-light text-dark border rounded-pill">{{ course.evaluations.count }} Módulos</span>
+                </div>
+                <h5 class="fw-bold mb-2">{{ course.title }}</h5>
+                <p class="text-muted small mb-4">URL: /p/{{ company.slug }}/avaliacao/?curso={{ course.slug }}</p>
+                
+                <div class="mt-auto pt-3 d-flex gap-2 border-top">
+                    <a href="{% url 'portal_course_detail' company.slug course.pk %}" class="btn btn-sm btn-outline-primary flex-grow-1">Gerenciar Módulos</a>
+                    <form method="POST" onsubmit="return confirm('ATENÇÃO: Isso excluirá o curso e TODAS as avaliações e respostas vinculadas. Confirmar?')">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_course">
+                        <input type="hidden" name="course_id" value="{{ course.id }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <div class="bg-light p-5 rounded">
+            <i class="bi bi-book text-muted display-1 mb-3"></i>
+            <h5 class="text-muted">Nenhum curso cadastrado ainda.</h5>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Novo Curso -->
+<div class="modal fade" id="newCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Cadastrar Novo Curso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_course">
+                    <div class="mb-3">
+                        <label class="form-label font-bold small">Nome do Curso</label>
+                        <input type="text" class="form-control" name="title" required placeholder="Ex: Ética e Compliance 2026">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-3 shadow-sm fw-bold mt-2">Criar Curso</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

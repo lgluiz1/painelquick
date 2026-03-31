@@ -6,6 +6,14 @@ urlpatterns = [
     path('portal/login/', views.portal_login, name='portal_login'),
     path('portal/dashboard/', views.portal_dashboard, name='portal_dashboard'),
     path('portal/company/<slug:slug>/', views.portal_company_detail, name='portal_company_detail'),
+    
+    # Detalhes de Gestão Scoped por Empresa
+    path('portal/company/<slug:slug>/meetings/', views.portal_meetings, name='portal_meetings'),
+    path('portal/company/<slug:slug>/meetings/<int:pk>/', views.portal_meeting_detail, name='portal_meeting_detail'),
+    path('portal/company/<slug:slug>/courses/', views.portal_courses, name='portal_courses'),
+    path('portal/company/<slug:slug>/courses/<int:pk>/', views.portal_course_detail, name='portal_course_detail'),
+    path('portal/company/<slug:slug>/complaints/', views.portal_complaints, name='portal_complaints'),
+    path('portal/company/<slug:slug>/complaints/<int:pk>/', views.portal_complaint_detail, name='portal_complaint_detail'),
 
     # --- PÁGINAS HOSPEDADAS (PÚBLICAS PARA EMPRESAS) ---
     path('p/<slug:company_slug>/<str:feature>/', views.hosted_form, name='hosted_form'),

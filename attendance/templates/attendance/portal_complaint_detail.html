@@ -1,0 +1,99 @@
+{% extends 'attendance/portal_base.html' %}
+
+{% block title %}Detalhes da Denúncia | #{{ complaint.ticket_id }}{% endblock %}
+{% block header_title %}Ticket #{{ complaint.ticket_id }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold m-0 text-primary">Relato da Ocorrência</h5>
+                <span class="badge bg-light text-dark border p-2">Ticket ID: {{ complaint.ticket_id }}</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-bold d-block">DENUNCIANTE</label>
+                        <p class="fw-bold m-0"><i class="bi bi-person me-2"></i>{{ complaint.name|default:"ANÔNIMO" }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-bold d-block">FILIAL/UNIDADE</label>
+                        <p class="fw-bold m-0"><i class="bi bi-geo-alt me-2"></i>{{ complaint.branch }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-bold d-block">CATEGORIA</label>
+                        <p class="fw-bold m-0"><i class="bi bi-tag me-2"></i>{{ complaint.category.name|default:"---" }}</p>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-light rounded-4 border">
+                    <p class="mb-0" style="white-space: pre-wrap; line-height: 1.6;">{{ complaint.description }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h5 class="fw-bold m-0"><i class="bi bi-chat-dots me-2 text-primary"></i>Linha do Tempo e Atualizações</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="timeline ps-3 border-start">
+                    {% for update in updates %}
+                    <div class="mb-4 position-relative">
+                        <div class="position-absolute bg-primary rounded-circle" style="width: 12px; height: 12px; left: -20px; top: 5px; border: 2px solid white;"></div>
+                        <div class="p-3 {% if update.is_from_admin %}bg-primary-subtle text-primary{% else %}bg-light{% endif %} rounded-3 border">
+                            <p class="mb-1">{{ update.message }}</p>
+                            <small class="opacity-75"><i class="bi bi-clock me-1"></i>{{ update.created_at|date:"d/m/Y H:i" }} {% if update.is_from_admin %}(Capelão){% endif %}</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small">Nenhuma atualização registrada neste ticket.</p>
+                    {% endfor %}
+                </div>
+
+                <form method="POST" class="mt-4 pt-3 border-top">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_update">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Adicionar Resposta ao Denunciante</label>
+                        <textarea name="message" class="form-control" rows="3" required placeholder="Digite aqui o parecer ou pedido de nova informação..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary px-4 shadow-sm fw-bold">Enviar Atualização</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+            <h6 class="fw-bold mb-4">Ações do Ticket</h6>
+            <form method="POST" class="mb-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_status">
+                <label class="small text-muted mb-2">ALTERAR STATUS</label>
+                <div class="input-group">
+                    <select name="status" class="form-select">
+                        <option value="novo" {% if complaint.status == 'novo' %}selected{% endif %}>Novo</option>
+                        <option value="em_analise" {% if complaint.status == 'em_analise' %}selected{% endif %}>Em Análise</option>
+                        <option value="resolvido" {% if complaint.status == 'resolvido' %}selected{% endif %}>Resolvido</option>
+                        <option value="arquivado" {% if complaint.status == 'arquivado' %}selected{% endif %}>Arquivado</option>
+                    </select>
+                    <button type="submit" class="btn btn-outline-primary">Salvar</button>
+                </div>
+            </form>
+
+            <div class="mt-4 pt-4 border-top">
+                <h6 class="fw-bold small text-muted mb-3">Informações Adicionais</h6>
+                <p class="small mb-1"><strong>Enviado em:</strong> {{ complaint.created_at|date:"d/m/Y H:i" }}</p>
+                <p class="small mb-1"><strong>Nível de Urgência:</strong> <span class="badge" style="background-color: {{ complaint.urgency.color }}">{{ complaint.urgency.name }}</span></p>
+                <p class="small mb-1"><strong>Email Contato:</strong> {{ complaint.email|default:"Não fornecido" }}</p>
+            </div>
+        </div>
+
+        <button class="btn btn-outline-danger w-100 py-3 shadow-sm" onclick="return confirm('ATENÇÃO: Excluir esta denúncia apagará todos os registros e atualizações. Continuar?')">
+            <i class="bi bi-trash me-2"></i>Excluir Denúncia permanentemente
+        </button>
+    </div>
+</div>
+{% endblock %}
