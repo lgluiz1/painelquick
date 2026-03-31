@@ -15,4 +15,14 @@ urlpatterns = [
     # URLS PÚBLICAS (ESTUDANTE)
     path('api/active-evaluation/<slug:course_slug>/', views.api_get_active_evaluation, name='api_get_active_evaluation'),
     path('api/submit-evaluation/', views.api_submit_evaluation, name='api_submit_evaluation'),
+
+    # CANAL DE DENÚNCIAS (OUVIDORIA)
+    path('api/complaints/submit/', views.api_submit_complaint, name='api_submit_complaint'),
+    path('api/complaints/options/', views.api_complaint_options, name='api_complaint_options'),
+    path('api/complaints/check/<str:ticket_id>/', views.api_check_complaint, name='api_check_complaint'),
+    
+    # ADMIN DENÚNCIAS
+    path('api/admin/complaints/', views.api_admin_complaints, name='api_admin_complaints'),
+    path('api/admin/complaints/<int:pk>/', views.api_admin_complaint_detail, name='api_admin_complaint_detail'),
+    path('api/admin/complaints/config/', views.api_admin_complaint_config, name='api_admin_complaint_config'),
 ]

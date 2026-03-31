@@ -1,15 +1,21 @@
 import json
 import secrets
+import string
+import random
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from django.utils.text import slugify
-from .models import Meeting, Attendance, Course, Evaluation, Question, StudentResponse, StudentAnswer
+from .models import (
+    Meeting, Attendance, Course, Evaluation, Question, 
+    StudentResponse, StudentAnswer, Complaint, 
+    ComplaintCategory, UrgencyLevel, ComplaintUpdate
+)
 
 # API KEYS
 PUBLIC_API_KEY = "QuickAttendance2026!#"
 # Persistent Token for active session (simplified for this case)
-ADMIN_TOKEN = "AdminQuickSession_f7e9a8b7c6d5e4f3a2b1" # Simplified fixed token for testing 
+ADMIN_TOKEN = "AdminQuickSession_f7e9a8b7c6d5e4f3a2b1" 
 
 def check_admin_auth(request):
     auth_header = request.headers.get('Authorization')
@@ -191,12 +197,11 @@ def api_evaluation_manage(request, pk):
             }
             return JsonResponse(data)
         
-        if request.method == 'POST': # Update status or Add Question
+        if request.method == 'POST':
             data = json.loads(request.body)
             action = data.get('action')
             
             if action == 'toggle_active':
-                # Desativa todas as outras do mesmo curso primeiro
                 if not evaluation.is_active:
                     evaluation.course.evaluations.update(is_active=False)
                     evaluation.is_active = True
@@ -215,7 +220,7 @@ def api_evaluation_manage(request, pk):
     except Evaluation.DoesNotExist:
         return JsonResponse({'error': 'Avaliação não encontrada'}, status=404)
 
-# --- API PÚBLICA (ESTUDANTE) ---
+# --- API PÚBLICA (ALUNOS) ---
 
 def api_get_active_evaluation(request, course_slug):
     try:
@@ -249,7 +254,7 @@ def api_submit_evaluation(request):
         name = data.get('nome')
         branch = data.get('filial')
         email = data.get('email')
-        answers = data.get('answers', {}) # Dict { question_id: answer_text }
+        answers = data.get('answers', {}) 
         
         evaluation = Evaluation.objects.get(pk=eval_id)
         
@@ -271,3 +276,158 @@ def api_submit_evaluation(request):
         return JsonResponse({'status': 'success'})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+# --- API OUVIDORIA / DENÚNCIAS ---
+
+@csrf_exempt
+def api_submit_complaint(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        is_anon = data.get('is_anonymous', True)
+        name = data.get('name') if not is_anon else None
+        email = data.get('email') if not is_anon else None
+        branch = data.get('branch')
+        category_id = data.get('category_id')
+        urgency_id = data.get('urgency_id')
+        description = data.get('description')
+
+        if not all([branch, description]):
+            return JsonResponse({'error': 'Filial e Descrição são obrigatórios.'}, status=400)
+
+        # Gerar Ticket ID único: QUICK-XXXXX
+        ticket = 'QUICK-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        while Complaint.objects.filter(ticket_id=ticket).exists():
+            ticket = 'QUICK-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+
+        category = ComplaintCategory.objects.filter(id=category_id).first() if category_id else None
+        urgency = UrgencyLevel.objects.filter(id=urgency_id).first() if urgency_id else None
+
+        complaint = Complaint.objects.create(
+            ticket_id=ticket,
+            is_anonymous=is_anon,
+            name=name,
+            email=email,
+            branch=branch,
+            category=category,
+            urgency=urgency,
+            description=description
+        )
+
+        return JsonResponse({
+            'status': 'success',
+            'ticket_id': ticket,
+            'message': 'Denúncia enviada com sucesso!'
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def api_check_complaint(request, ticket_id):
+    try:
+        complaint = Complaint.objects.get(ticket_id=ticket_id)
+        updates = complaint.updates.all().order_by('created_at')
+        
+        return JsonResponse({
+            'ticket_id': complaint.ticket_id,
+            'status': complaint.get_status_display(),
+            'category': complaint.category.name if complaint.category else 'Não definida',
+            'urgency': complaint.urgency.name if complaint.urgency else 'Não definida',
+            'created_at': complaint.created_at.strftime('%d/%m/%Y %H:%M'),
+            'description': complaint.description,
+            'updates': [{
+                'message': u.message,
+                'created_at': u.created_at.strftime('%d/%m/%Y %H:%M'),
+                'is_admin': u.is_from_admin
+            } for u in updates]
+        })
+    except Complaint.DoesNotExist:
+        return JsonResponse({'error': 'Ticket não encontrado'}, status=404)
+
+@csrf_exempt
+def api_admin_complaints(request):
+    if not check_admin_auth(request):
+        return JsonResponse({'error': 'Não autorizado'}, status=401)
+    
+    complaints = Complaint.objects.all().order_by('-created_at')
+    data = [{
+        'id': c.id,
+        'ticket_id': c.ticket_id,
+        'status': c.status,
+        'status_display': c.get_status_display(),
+        'branch': c.branch,
+        'category': c.category.name if c.category else '---',
+        'urgency_color': c.urgency.color if c.urgency else '#6c757d',
+        'is_anonymous': c.is_anonymous,
+        'created_at': c.created_at.strftime('%d/%m/%Y %H:%M')
+    } for c in complaints]
+    return JsonResponse(data, safe=False)
+
+@csrf_exempt
+def api_admin_complaint_detail(request, pk):
+    if not check_admin_auth(request):
+        return JsonResponse({'error': 'Não autorizado'}, status=401)
+    
+    try:
+        complaint = Complaint.objects.get(pk=pk)
+        if request.method == 'GET':
+            updates = complaint.updates.all().order_by('created_at')
+            return JsonResponse({
+                'id': complaint.id,
+                'ticket_id': complaint.ticket_id,
+                'name': complaint.name if not complaint.is_anonymous else 'Anônimo',
+                'email': complaint.email if not complaint.is_anonymous else '---',
+                'branch': complaint.branch,
+                'description': complaint.description,
+                'status': complaint.status,
+                'category': complaint.category.name if complaint.category else '---',
+                'updates': [{
+                    'message': u.message,
+                    'created_at': u.created_at.strftime('%d/%m/%Y %H:%M'),
+                    'is_admin': u.is_from_admin
+                } for u in updates]
+            })
+        
+        if request.method == 'POST':
+            data = json.loads(request.body)
+            action = data.get('action')
+            
+            if action == 'add_update':
+                ComplaintUpdate.objects.create(
+                    complaint=complaint,
+                    message=data.get('message'),
+                    is_from_admin=True
+                )
+            elif action == 'update_status':
+                complaint.status = data.get('status')
+                complaint.save()
+                
+            return JsonResponse({'status': 'success'})
+            
+    except Complaint.DoesNotExist:
+        return JsonResponse({'error': 'Denúncia não encontrada'}, status=404)
+
+@csrf_exempt
+def api_complaint_options(request):
+    categories = ComplaintCategory.objects.all().order_by('name')
+    urgencies = UrgencyLevel.objects.all().order_by('id')
+    return JsonResponse({
+        'categories': [{'id': c.id, 'name': c.name} for c in categories],
+        'urgencies': [{'id': u.id, 'name': u.name, 'color': u.color} for u in urgencies]
+    })
+
+@csrf_exempt
+def api_admin_complaint_config(request):
+    if not check_admin_auth(request):
+        return JsonResponse({'error': 'Não autorizado'}, status=401)
+    
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        target = data.get('target')
+        if target == 'category':
+            ComplaintCategory.objects.create(name=data.get('name'))
+        elif target == 'urgency':
+            UrgencyLevel.objects.create(name=data.get('name'), color=data.get('color', '#6c757d'))
+        return JsonResponse({'status': 'success'})

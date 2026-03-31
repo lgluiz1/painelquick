@@ -90,3 +90,66 @@ class StudentAnswer(models.Model):
     class Meta:
         verbose_name = "Resposta da Pergunta"
         verbose_name_plural = "Respostas das Perguntas"
+
+# --- Novos modelos para Ouvidoria (Denúncias) ---
+
+class ComplaintCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Categoria de Denúncia"
+        verbose_name_plural = "Categorias de Denúncias"
+
+class UrgencyLevel(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=20, default="#6c757d") # CSS Color (Ex: #dc3545)
+
+    def __str__(self):
+        return self.name
+
+class Complaint(models.Model):
+    STATUS_CHOICES = [
+        ('novo', 'Novo'),
+        ('em_analise', 'Em Análise'),
+        ('resolvido', 'Resolvido'),
+        ('arquivado', 'Arquivado'),
+    ]
+
+    ticket_id = models.CharField(max_length=20, unique=True) # Ex: QUICK-XXXXX
+    category = models.ForeignKey(ComplaintCategory, on_delete=models.SET_NULL, null=True, blank=True)
+    urgency = models.ForeignKey(UrgencyLevel, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Identificação opcional
+    is_anonymous = models.BooleanField(default=True)
+    name = models.CharField(max_length=255, null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    branch = models.CharField(max_length=100) # Filial (sempre obrigatório para saber onde resolver)
+    
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='novo')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Ticket {self.ticket_id} - {self.status}"
+
+    class Meta:
+        verbose_name = "Denúncia"
+        verbose_name_plural = "Denúncias"
+
+class ComplaintUpdate(models.Model):
+    complaint = models.ForeignKey(Complaint, on_delete=models.CASCADE, related_name='updates')
+    message = models.TextField()
+    is_from_admin = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Update on {self.complaint.ticket_id}"
+
+    class Meta:
+        verbose_name = "Atualização de Denúncia"
+        verbose_name_plural = "Atualizações de Denúncias"
