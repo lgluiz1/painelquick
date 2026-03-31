@@ -133,6 +133,17 @@ def api_submit_complaint(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
+def api_get_branches(request):
+    company = get_company_by_token(request)
+    if not company:
+        return JsonResponse({'error': 'Token Inválido'}, status=401)
+    
+    branches = company.branches.all().order_by('name')
+    return JsonResponse({
+        'branches': [{'id': b.id, 'name': b.name} for b in branches]
+    })
+
+@csrf_exempt
 def api_complaint_options(request):
     company = get_company_by_token(request)
     if not company: return JsonResponse({'error': 'Invalid Token'}, status=401)

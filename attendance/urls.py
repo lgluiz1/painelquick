@@ -25,6 +25,7 @@ urlpatterns = [
     path('api/submit-evaluation/', views.api_submit_evaluation, name='api_submit_evaluation'),
     path('api/complaints/submit/', views.api_submit_complaint, name='api_submit_complaint'),
     path('api/complaints/options/', views.api_complaint_options, name='api_complaint_options'),
+    path('api/branches/', views.api_get_branches, name='api_get_branches'),
     
     # Obs: As APIs de gestão antigas foram desativadas em favor do novo Portal Centralizado.
 ]
