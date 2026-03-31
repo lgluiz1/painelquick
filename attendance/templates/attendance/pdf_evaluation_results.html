@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid {{ company.primary_color }};
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            max-height: 50px;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: {{ company.primary_color }};
+            margin: 0;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            margin: 5px 0 0;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+        .table th {
+            background-color: {{ company.primary_color }};
+            color: white;
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        .table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {% if company.logo_url %}
+            <img src="{{ company.logo_url }}" class="logo">
+        {% endif %}
+        <h1 class="title">Relatório de Resultados: {{ evaluation.title }}</h1>
+        <p class="subtitle">{{ evaluation.course.title }} | Emitido em: {% now "d/m/Y H:i" %}</p>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th width="15%">Aluno / Filial</th>
+                <th width="15%">E-mail</th>
+                {% for q in questions %}
+                <th>{{ q.text }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for resp in responses %}
+            <tr>
+                <td><strong>{{ resp.name }}</strong><br><small>{{ resp.branch }}</small></td>
+                <td>{{ resp.email }}</td>
+                {% for q in questions %}
+                    <td>
+                        {% for ans in resp.answers.all %}
+                            {% if ans.question_id == q.id %}{{ ans.answer_text }}{% endif %}
+                        {% endfor %}
+                    </td>
+                {% endfor %}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{{ questions.count|add:2 }}" style="text-align: center; padding: 50px;">Nenhum dado encontrado para exportação.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Gerado automaticamente pela Plataforma SaaS Capelão - Empresa: {{ company.name }}
+    </div>
+</body>
+</html>

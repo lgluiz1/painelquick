@@ -12,7 +12,17 @@
             <li class="breadcrumb-item active">{{ meeting.title }}</li>
         </ol>
     </nav>
-    <a href="#" class="btn btn-outline-secondary shadow-sm" onclick="window.print()"><i class="bi bi-printer me-2"></i>Imprimir Lista</a>
+    <div class="dropdown">
+        <button class="btn btn-sm btn-dark dropdown-toggle rounded-pill px-4 shadow-sm" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-download me-2"></i>Exportar Relatório
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end border-0 shadow">
+            <li><a class="dropdown-item py-2" href="{% url 'export_meeting_excel' company.slug meeting.pk %}"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Exportar para Excel (.xlsx)</a></li>
+            <li><a class="dropdown-item py-2" href="{% url 'export_meeting_pdf' company.slug meeting.pk %}" target="_blank"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Exportar para PDF (.pdf)</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item py-2" href="#" onclick="window.print()"><i class="bi bi-printer me-2 text-muted"></i>Versão para Impressão</a></li>
+        </ul>
+    </div>
 </div>
 
 <div class="row g-4">

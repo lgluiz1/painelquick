@@ -8,6 +8,10 @@ from django.utils.text import slugify
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 import os
+import io
+from django.template.loader import render_to_string
+from openpyxl import Workbook
+from xhtml2pdf import pisa
 from .models import (
     Company, Branch, Meeting, Attendance, Course, Evaluation, Question, 
     StudentResponse, StudentAnswer, Complaint, 
@@ -358,3 +362,120 @@ def hosted_form(request, company_slug, feature):
         pass
         
     return render(request, f'attendance/public_{feature}.html', context)
+
+def portal_evaluation_detail(request, slug, pk):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    evaluation = get_object_or_404(Evaluation, pk=pk, course__company__slug=slug)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add_question':
+            text = request.POST.get('text')
+            order = request.POST.get('order', 0)
+            Question.objects.create(evaluation=evaluation, text=text, order=order)
+        elif action == 'delete_question':
+            get_object_or_404(Question, id=request.POST.get('question_id'), evaluation=evaluation).delete()
+        elif action == 'toggle_status':
+            evaluation.is_active = not evaluation.is_active
+            evaluation.save()
+        return redirect('portal_evaluation_detail', slug=slug, pk=pk)
+        
+    return render(request, 'attendance/portal_evaluation_detail.html', {
+        'company': evaluation.course.company,
+        'evaluation': evaluation,
+        'questions': evaluation.questions.all(),
+        'responses': evaluation.student_responses.all().order_by('-created_at')
+    })
+
+def export_evaluation_excel(request, slug, pk):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    evaluation = get_object_or_404(Evaluation, pk=pk, course__company__slug=slug)
+    responses = evaluation.student_responses.all().prefetch_related('answers__question')
+    questions = evaluation.questions.all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Resultados"
+
+    # Header
+    headers = ['Nome', 'Filial', 'Email', 'Data']
+    for q in questions:
+        headers.append(q.text)
+    ws.append(headers)
+
+    # Data
+    for resp in responses:
+        row = [resp.name, resp.branch, resp.email, resp.created_at.strftime('%d/%m/%Y %H:%M')]
+        answers_map = {ans.question_id: ans.answer_text for ans in resp.answers.all()}
+        for q in questions:
+            row.append(answers_map.get(q.id, ""))
+        ws.append(row)
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=resultados_{slugify(evaluation.title)}.xlsx'
+    wb.save(response)
+    return response
+
+def export_evaluation_pdf(request, slug, pk):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    evaluation = get_object_or_404(Evaluation, pk=pk, course__company__slug=slug)
+    responses = evaluation.student_responses.all().prefetch_related('answers__question')
+    questions = evaluation.questions.all()
+    
+    context = {
+        'evaluation': evaluation,
+        'responses': responses,
+        'questions': questions,
+        'company': evaluation.course.company,
+    }
+    
+    html = render_to_string('attendance/pdf_evaluation_results.html', context)
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html.encode("UTF-8")), result)
+    
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename=resultados_{slugify(evaluation.title)}.pdf'
+        return response
+    return HttpResponse("Erro ao gerar PDF", status=500)
+
+def export_meeting_excel(request, slug, pk):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    meeting = get_object_or_404(Meeting, pk=pk, company__slug=slug)
+    attendances = meeting.attendances.all().order_by('-created_at')
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Lista de Presença"
+
+    headers = ['Nome', 'Filial', 'Data de Registro']
+    ws.append(headers)
+
+    for att in attendances:
+        ws.append([att.name, att.branch, att.created_at.strftime('%d/%m/%Y %H:%M')])
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=presenca_{slugify(meeting.title)}.xlsx'
+    wb.save(response)
+    return response
+
+def export_meeting_pdf(request, slug, pk):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    meeting = get_object_or_404(Meeting, pk=pk, company__slug=slug)
+    attendances = meeting.attendances.all().order_by('name')
+    
+    context = {
+        'meeting': meeting,
+        'attendances': attendances,
+        'company': meeting.company,
+    }
+    
+    html = render_to_string('attendance/pdf_meeting_attendance.html', context)
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html.encode("UTF-8")), result)
+    
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename=presenca_{slugify(meeting.title)}.pdf'
+        return response
+    return HttpResponse("Erro ao gerar PDF", status=500)

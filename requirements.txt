@@ -3,3 +3,5 @@ mysqlclient
 django-cors-headers
 gunicorn
 python-dotenv
+openpyxl
+xhtml2pdf

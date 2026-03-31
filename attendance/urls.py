@@ -10,8 +10,13 @@ urlpatterns = [
     # Detalhes de Gestão Scoped por Empresa
     path('portal/company/<slug:slug>/meetings/', views.portal_meetings, name='portal_meetings'),
     path('portal/company/<slug:slug>/meetings/<int:pk>/', views.portal_meeting_detail, name='portal_meeting_detail'),
+    path('portal/company/<slug:slug>/meetings/<int:pk>/export/excel/', views.export_meeting_excel, name='export_meeting_excel'),
+    path('portal/company/<slug:slug>/meetings/<int:pk>/export/pdf/', views.export_meeting_pdf, name='export_meeting_pdf'),
     path('portal/company/<slug:slug>/courses/', views.portal_courses, name='portal_courses'),
     path('portal/company/<slug:slug>/courses/<int:pk>/', views.portal_course_detail, name='portal_course_detail'),
+    path('portal/company/<slug:slug>/courses/evaluation/<int:pk>/', views.portal_evaluation_detail, name='portal_evaluation_detail'),
+    path('portal/company/<slug:slug>/courses/evaluation/<int:pk>/export/excel/', views.export_evaluation_excel, name='export_evaluation_excel'),
+    path('portal/company/<slug:slug>/courses/evaluation/<int:pk>/export/pdf/', views.export_evaluation_pdf, name='export_evaluation_pdf'),
     path('portal/company/<slug:slug>/complaints/', views.portal_complaints, name='portal_complaints'),
     path('portal/company/<slug:slug>/complaints/<int:pk>/', views.portal_complaint_detail, name='portal_complaint_detail'),
     path('portal/company/<slug:slug>/download/<str:feature>/', views.download_template, name='download_template'),

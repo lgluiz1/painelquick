@@ -1,0 +1,191 @@
+{% extends 'attendance/portal_base.html' %}
+
+{% block title %}Questões & Respostas | {{ evaluation.title }}{% endblock %}
+{% block header_title %}{{ evaluation.title }} - Detalhes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb m-0">
+            <li class="breadcrumb-item"><a href="{% url 'portal_company_detail' company.slug %}">{{ company.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'portal_courses' company.slug %}">Cursos</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'portal_course_detail' company.slug evaluation.course.pk %}">{{ evaluation.course.title }}</a></li>
+            <li class="breadcrumb-item active">{{ evaluation.title }}</li>
+        </ol>
+    </nav>
+    <div class="d-flex gap-2">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="toggle_status">
+            <button type="submit" class="btn {% if evaluation.is_active %}btn-success{% else %}btn-outline-secondary{% endif %} d-flex align-items-center shadow-sm">
+                <i class="bi {% if evaluation.is_active %}bi-check-circle{% else %}bi-circle{% endif %} me-2"></i>
+                {% if evaluation.is_active %}Ativo (Público){% else %}Rascunho (Inativo){% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-header bg-white border-0 p-0">
+        <ul class="nav nav-tabs nav-fill border-bottom" id="evalTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active py-3 fw-bold" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab">
+                    <i class="bi bi-list-check me-2"></i>Gerenciar Questões
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-3 fw-bold" id="responses-tab" data-bs-toggle="tab" data-bs-target="#responses" type="button" role="tab">
+                    <i class="bi bi-people me-2"></i>Respostas dos Alunos
+                    <span class="badge bg-primary ms-2">{{ responses.count }}</span>
+                </button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body p-4">
+        <div class="tab-content" id="evalTabsContent">
+            <!-- ABA QUESTÕES -->
+            <div class="tab-pane fade show active" id="questions" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold m-0 text-primary">Questões do Módulo</h5>
+                    <button class="btn btn-sm btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
+                        <i class="bi bi-plus-lg me-2"></i>Nova Pergunta
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th width="100">Ordem</th>
+                                <th>Texto da Questão</th>
+                                <th width="100" class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for q in questions %}
+                            <tr>
+                                <td class="fw-bold text-muted">#{{ q.order }}</td>
+                                <td>{{ q.text }}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-danger border-0" onclick="confirmDeleteQuestion('{{ q.id }}', '{{ q.text|truncatechars:30 }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-5 text-muted italic">Nenhuma questão cadastrada para este módulo.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ABA RESPOSTAS -->
+            <div class="tab-pane fade" id="responses" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold m-0 text-primary">Resultados Coletados</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-dark dropdown-toggle rounded-pill px-4" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-download me-2"></i>Exportar Relatório
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow">
+                            <li><a class="dropdown-item py-2" href="{% url 'export_evaluation_excel' company.slug evaluation.pk %}"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Exportar para Excel (.xlsx)</a></li>
+                            <li><a class="dropdown-item py-2" href="{% url 'export_evaluation_pdf' company.slug evaluation.pk %}" target="_blank"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Exportar para PDF (.pdf)</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle small">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Nome do Aluno</th>
+                                <th>Filial</th>
+                                <th>E-mail</th>
+                                <th>Data de Envio</th>
+                                <th class="text-center">Ver Respostas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resp in responses %}
+                            <tr>
+                                <td class="fw-bold">{{ resp.name }}</td>
+                                <td class="text-muted">{{ resp.branch }}</td>
+                                <td>{{ resp.email }}</td>
+                                <td>{{ resp.created_at|date:"d/m/Y H:i" }}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-link text-primary text-decoration-none fw-bold" onclick="viewDetailedAnswers('{{ resp.id }}')">
+                                        Explorar <i class="bi bi-chevron-right small"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted italic">Nenhum aluno respondeu a este módulo até o momento.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adicionar Questão -->
+<div class="modal fade" id="addQuestionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Nova Pergunta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_question">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Texto da Pergunta</label>
+                        <textarea name="text" class="form-control" rows="3" required placeholder="Ex: Qual sua opinião sobre o código de conduta?"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Ordem de Exibição</label>
+                        <input type="number" name="order" class="form-control" value="{{ questions.count|add:1 }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-bold shadow-sm">Adicionar Questão</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form Excluir Questão (Oculto) -->
+<form method="POST" id="deleteQuestionForm" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete_question">
+    <input type="hidden" name="question_id" id="modalQuestionId">
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmDeleteQuestion(id, name) {
+        uiConfirm(
+            'Excluir Questão',
+            `Deseja realmente remover a questão "${name}"? Isso não apagará as respostas já enviadas, mas a questão não aparecerá mais em novos envios.`,
+            () => {
+                document.getElementById('modalQuestionId').value = id;
+                document.getElementById('deleteQuestionForm').submit();
+            }
+        );
+    }
+
+    function viewDetailedAnswers(respId) {
+        // Implementação futura ou modal rápido para ver texto
+        uiToast("Funcionalidade de visualização individual em desenvolvimento. Use a Exportação por enquanto! 😉", "warning");
+    }
+</script>
+{% endblock %}

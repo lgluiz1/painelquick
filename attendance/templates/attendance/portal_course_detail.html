@@ -47,7 +47,7 @@
                         <td class="small text-muted">{{ eval.created_at|date:"d/m/Y" }}</td>
                         <td class="pe-4 text-end">
                             <div class="btn-group gap-1">
-                                <a href="#" class="btn btn-sm btn-outline-primary rounded-pill px-3">Questões & Respostas</a>
+                                <a href="{% url 'portal_evaluation_detail' company.slug eval.pk %}" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">Questões & Respostas</a>
                                 <button type="button" class="btn btn-sm btn-outline-danger border-0 rounded-circle" onclick="confirmDeleteEval('{{ eval.id }}', '{{ eval.title }}')">
                                     <i class="bi bi-trash"></i>
                                 </button>
