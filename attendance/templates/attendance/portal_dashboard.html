@@ -153,6 +153,9 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
 <script>
     function confirmDeleteCompany() {
         uiConfirm(
@@ -161,27 +164,26 @@
             () => { document.getElementById('deleteCompanyForm').submit(); }
         );
     }
-    const settingsModal = document.getElementById('settingsModal')
-    settingsModal.addEventListener('show.bs.modal', event => {
-        const button = event.relatedTarget
-        const id = button.getAttribute('data-bs-id')
-        const name = button.getAttribute('data-bs-name')
-        const logo = button.getAttribute('data-bs-logo')
-        const color = button.getAttribute('data-bs-color')
-        const active = button.getAttribute('data-bs-active') === 'true'
 
-        document.getElementById('modalTitle').textContent = `Ajustes: ${name}`
-        document.getElementById('comp_id').value = id
-        document.getElementById('comp_id_delete').value = id
-        document.getElementById('comp_name').value = name
-        document.getElementById('comp_logo').value = logo
-        document.getElementById('comp_color').value = color
-        document.getElementById('comp_active').checked = active
-    })
+    let settingsModal;
+    document.addEventListener('DOMContentLoaded', () => {
+        settingsModal = document.getElementById('settingsModal');
+        settingsModal.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-bs-id');
+            const name = button.getAttribute('data-bs-name');
+            const logo = button.getAttribute('data-bs-logo');
+            const color = button.getAttribute('data-bs-color');
+            const active = button.getAttribute('data-bs-active') === 'true';
+
+            document.getElementById('modalTitle').textContent = `Ajustes: ${name}`;
+            document.getElementById('comp_id').value = id;
+            document.getElementById('comp_id_delete').value = id;
+            document.getElementById('comp_name').value = name;
+            document.getElementById('comp_logo').value = logo;
+            document.getElementById('comp_color').value = color;
+            document.getElementById('comp_active').checked = active;
+        });
+    });
 </script>
-
-<style>
-    .grayscale { filter: grayscale(100%); }
-    .card-stat:hover { transform: translateY(-5px); transition: 0.3s; }
-</style>
 {% endblock %}

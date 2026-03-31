@@ -174,7 +174,14 @@
     </div>
 </div>
 
+{% block extra_js %}
 <script>
+    let editBranchModal;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        editBranchModal = new bootstrap.Modal(document.getElementById('editBranchModal'));
+    });
+
     function copyToken() {
         var copyText = document.getElementById("apiToken");
         copyText.select();
@@ -182,7 +189,6 @@
         uiToast("Token copiado para a área de transferência! ✅");
     }
 
-    const editBranchModal = new bootstrap.Modal(document.getElementById('editBranchModal'));
     function editBranch(id, currentName) {
         document.getElementById('modalEditBranchId').value = id;
         document.getElementById('modalEditBranchName').value = currentName;
@@ -201,4 +207,5 @@
         );
     }
 </script>
+{% endblock %}
 {% endblock %}

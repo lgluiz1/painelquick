@@ -114,16 +114,19 @@
         document.getElementById('sidebar').classList.toggle('active');
     }
 
-    // Helpers de UI Globais
-    const bsConfirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-    const bsToast = new bootstrap.Toast(document.getElementById('uiToast'));
+    // Aguardar carregamento do DOM para iniciar os helpers
+    let bsConfirmModal, bsToast;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        bsConfirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        bsToast = new bootstrap.Toast(document.getElementById('uiToast'));
+    });
 
     function uiConfirm(title, message, onConfirm) {
         document.getElementById('confirmTitle').innerText = title;
         document.getElementById('confirmMessage').innerText = message;
         const btn = document.getElementById('confirmBtn');
         
-        // Remover eventos antigos para não duplicar
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
         
@@ -147,5 +150,7 @@
         bsToast.show();
     }
 </script>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>
