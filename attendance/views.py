@@ -3,7 +3,8 @@ import string
 import random
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.utils.text import slugify
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
@@ -188,8 +189,8 @@ def portal_login(request):
         return render(request, 'attendance/portal_login.html', {'error': 'Acesso negado.'})
     return render(request, 'attendance/portal_login.html')
 
+@login_required
 def portal_dashboard(request):
-    if not request.user.is_authenticated: return redirect('portal_login')
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'create_company':
@@ -210,8 +211,8 @@ def portal_dashboard(request):
         'active_companies_count': Company.objects.filter(is_active=True).count()
     })
 
+@login_required
 def portal_company_detail(request, slug):
-    if not request.user.is_authenticated: return redirect('portal_login')
     company = get_object_or_404(Company, slug=slug)
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -230,8 +231,8 @@ def portal_company_detail(request, slug):
 
 # --- GESTÃO DETALHADA ---
 
+@login_required
 def portal_meetings(request, slug):
-    if not request.user.is_authenticated: return redirect('portal_login')
     company = get_object_or_404(Company, slug=slug)
     if request.method == 'POST':
         if request.POST.get('action') == 'delete_meeting':
@@ -241,16 +242,16 @@ def portal_meetings(request, slug):
         return redirect('portal_meetings', slug=slug)
     return render(request, 'attendance/portal_meetings.html', {'company': company, 'meetings': company.meetings.all().order_by('-created_at')})
 
+@login_required
 def portal_meeting_detail(request, slug, pk):
-    if not request.user.is_authenticated: return redirect('portal_login')
     meeting = get_object_or_404(Meeting, pk=pk, company__slug=slug)
     if request.method == 'POST' and request.POST.get('action') == 'delete_attendance':
         get_object_or_404(Attendance, id=request.POST.get('attendance_id'), meeting=meeting).delete()
         return redirect('portal_meeting_detail', slug=slug, pk=pk)
     return render(request, 'attendance/portal_meeting_detail.html', {'company': meeting.company, 'meeting': meeting, 'attendances': meeting.attendances.all().order_by('-created_at')})
 
+@login_required
 def portal_courses(request, slug):
-    if not request.user.is_authenticated: return redirect('portal_login')
     company = get_object_or_404(Company, slug=slug)
     if request.method == 'POST':
         if request.POST.get('action') == 'delete_course':
@@ -261,8 +262,8 @@ def portal_courses(request, slug):
         return redirect('portal_courses', slug=slug)
     return render(request, 'attendance/portal_courses.html', {'company': company, 'courses': company.courses.all().order_by('-created_at')})
 
+@login_required
 def portal_course_detail(request, slug, pk):
-    if not request.user.is_authenticated: return redirect('portal_login')
     course = get_object_or_404(Course, pk=pk, company__slug=slug)
     if request.method == 'POST':
         if request.POST.get('action') == 'add_evaluation':
@@ -272,16 +273,16 @@ def portal_course_detail(request, slug, pk):
         return redirect('portal_course_detail', slug=slug, pk=pk)
     return render(request, 'attendance/portal_course_detail.html', {'company': course.company, 'course': course, 'evaluations': course.evaluations.all().order_by('-created_at')})
 
+@login_required
 def portal_complaints(request, slug):
-    if not request.user.is_authenticated: return redirect('portal_login')
     company = get_object_or_404(Company, slug=slug)
     if request.method == 'POST' and request.POST.get('action') == 'delete_complaint':
         get_object_or_404(Complaint, id=request.POST.get('complaint_id'), company=company).delete()
         return redirect('portal_complaints', slug=slug)
     return render(request, 'attendance/portal_complaints.html', {'company': company, 'complaints': company.complaints.all().order_by('-created_at')})
 
+@login_required
 def portal_complaint_detail(request, slug, pk):
-    if not request.user.is_authenticated: return redirect('portal_login')
     complaint = get_object_or_404(Complaint, pk=pk, company__slug=slug)
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -293,8 +294,8 @@ def portal_complaint_detail(request, slug, pk):
         return redirect('portal_complaint_detail', slug=slug, pk=pk)
     return render(request, 'attendance/portal_complaint_detail.html', {'company': complaint.company, 'complaint': complaint, 'updates': complaint.updates.all().order_by('created_at')})
 
+@login_required
 def download_template(request, slug, feature):
-    if not request.user.is_authenticated: return redirect('portal_login')
     company = get_object_or_404(Company, slug=slug)
     
     # Caminho do arquivo na raiz do projeto (fora da pasta backend)
@@ -364,8 +365,8 @@ def hosted_form(request, company_slug, feature):
         
     return render(request, f'attendance/public_{feature}.html', context)
 
+@login_required
 def portal_evaluation_detail(request, slug, pk):
-    if not request.user.is_authenticated: return redirect('portal_login')
     evaluation = get_object_or_404(Evaluation, pk=pk, course__company__slug=slug)
     
     if request.method == 'POST':
@@ -388,8 +389,8 @@ def portal_evaluation_detail(request, slug, pk):
         'responses': evaluation.student_responses.all().order_by('-created_at')
     })
 
+@login_required
 def export_evaluation_excel(request, slug, pk):
-    if not request.user.is_authenticated: return redirect('portal_login')
     evaluation = get_object_or_404(Evaluation, pk=pk, course__company__slug=slug)
     responses = evaluation.student_responses.all().prefetch_related('answers__question')
     questions = evaluation.questions.all()
@@ -417,8 +418,8 @@ def export_evaluation_excel(request, slug, pk):
     wb.save(response)
     return response
 
+@login_required
 def export_evaluation_pdf(request, slug, pk):
-    if not request.user.is_authenticated: return redirect('portal_login')
     evaluation = get_object_or_404(Evaluation, pk=pk, course__company__slug=slug)
     responses = evaluation.student_responses.all().prefetch_related('answers__question')
     questions = evaluation.questions.all()
@@ -440,8 +441,8 @@ def export_evaluation_pdf(request, slug, pk):
         return response
     return HttpResponse("Erro ao gerar PDF", status=500)
 
+@login_required
 def export_meeting_excel(request, slug, pk):
-    if not request.user.is_authenticated: return redirect('portal_login')
     meeting = get_object_or_404(Meeting, pk=pk, company__slug=slug)
     attendances = meeting.attendances.all().order_by('-created_at')
 
@@ -460,8 +461,8 @@ def export_meeting_excel(request, slug, pk):
     wb.save(response)
     return response
 
+@login_required
 def export_meeting_pdf(request, slug, pk):
-    if not request.user.is_authenticated: return redirect('portal_login')
     meeting = get_object_or_404(Meeting, pk=pk, company__slug=slug)
     attendances = meeting.attendances.all().order_by('name')
     
@@ -481,8 +482,8 @@ def export_meeting_pdf(request, slug, pk):
         return response
     return HttpResponse("Erro ao gerar PDF", status=500)
 
+@login_required
 def portal_saas_settings(request):
-    if not request.user.is_authenticated: return redirect('portal_login')
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -505,3 +506,7 @@ def portal_saas_settings(request):
         'urgencies': UrgencyLevel.objects.filter(company__isnull=True),
     }
     return render(request, 'attendance/portal_saas_settings.html', context)
+
+def portal_logout(request):
+    logout(request)
+    return redirect('portal_login')

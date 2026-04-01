@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     # --- PORTAL DO CAPELÃO (ADMIN CENTRAL) ---
     path('portal/login/', views.portal_login, name='portal_login'),
+    path('portal/logout/', views.portal_logout, name='portal_logout'),
     path('portal/dashboard/', views.portal_dashboard, name='portal_dashboard'),
     path('portal/company/<slug:slug>/', views.portal_company_detail, name='portal_company_detail'),
     path('portal/saas-settings/', views.portal_saas_settings, name='portal_saas_settings'),

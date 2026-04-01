@@ -58,7 +58,7 @@
         <a class="nav-link" href="#"><i class="bi bi-people"></i> Usuários</a>
         <a class="nav-link" href="{% url 'portal_saas_settings' %}"><i class="bi bi-gear"></i> Configurações</a>
         <div class="mt-5 border-top border-secondary pt-3">
-            <a class="nav-link text-danger" href="#"><i class="bi bi-box-arrow-left"></i> Sair</a>
+            <a class="nav-link text-danger" href="{% url 'portal_logout' %}"><i class="bi bi-box-arrow-left"></i> Sair</a>
         </div>
     </nav>
 </div>
@@ -74,7 +74,7 @@
             <ul class="dropdown-menu dropdown-menu-end border-0 shadow">
                 <li><a class="dropdown-item" href="#">Meu Perfil</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-danger" href="#">Sair</a></li>
+                <li><a class="dropdown-item text-danger" href="{% url 'portal_logout' %}">Sair</a></li>
             </ul>
         </div>
     </header>
