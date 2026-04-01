@@ -331,8 +331,8 @@ def download_template(request, slug, feature):
     content = content.replace('TOKEN_AQUI', company.api_token) # Variável comum que podemos ter usado
     
     # 2. URL do Servidor (Baseado no seu domínio atual)
-    content = content.replace('http://localhost:8000', 'https://quickdelivery.luizgustavo.tech')
-    content = content.replace('https://seu-servidor.com', 'https://quickdelivery.luizgustavo.tech')
+    content = content.replace('http://localhost:8000', 'https://gilberto.luizgustavo.tech')
+    content = content.replace('https://seu-servidor.com', 'https://gilberto.luizgustavo.tech')
     
     # 3. Branding (Opcional, se o HTML suportar)
     content = content.replace('#e63946', company.primary_color)

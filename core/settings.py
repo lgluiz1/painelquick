@@ -102,7 +102,7 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://quickdelivery.com.br",
     "https://quickdelivery.com.br",
-    "https://quickdelivery.luizgustavo.tech",
+    "https://gilberto.luizgustavo.tech",
 ]
 
 LOGIN_URL = '/login/'
