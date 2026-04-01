@@ -479,3 +479,28 @@ def export_meeting_pdf(request, slug, pk):
         response['Content-Disposition'] = f'attachment; filename=presenca_{slugify(meeting.title)}.pdf'
         return response
     return HttpResponse("Erro ao gerar PDF", status=500)
+
+def portal_saas_settings(request):
+    if not request.user.is_authenticated: return redirect('portal_login')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add_category':
+            ComplaintCategory.objects.create(name=request.POST.get('name'), company=None)
+        elif action == 'delete_category':
+            ComplaintCategory.objects.filter(id=request.POST.get('category_id'), company__isnull=True).delete()
+        elif action == 'add_urgency':
+            UrgencyLevel.objects.create(
+                name=request.POST.get('name'), 
+                color=request.POST.get('color', '#6c757d'),
+                company=None
+            )
+        elif action == 'delete_urgency':
+            UrgencyLevel.objects.filter(id=request.POST.get('urgency_id'), company__isnull=True).delete()
+        return redirect('portal_saas_settings')
+
+    context = {
+        'categories': ComplaintCategory.objects.filter(company__isnull=True).order_by('name'),
+        'urgencies': UrgencyLevel.objects.filter(company__isnull=True),
+    }
+    return render(request, 'attendance/portal_saas_settings.html', context)
