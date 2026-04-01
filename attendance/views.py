@@ -141,8 +141,8 @@ def api_submit_complaint(request):
             return JsonResponse({'error': 'Dados incompletos'}, status=400)
 
         ticket = 'TK-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-        category = ComplaintCategory.objects.filter(id=data.get('category_id'), company=company).first()
-        urgency = UrgencyLevel.objects.filter(id=data.get('urgency_id'), company=company).first()
+        category = ComplaintCategory.objects.filter(id=data.get('category_id'), company__isnull=True).first()
+        urgency = UrgencyLevel.objects.filter(id=data.get('urgency_id'), company__isnull=True).first()
 
         Complaint.objects.create(
             company=company, ticket_id=ticket, is_anonymous=is_anon,
@@ -170,8 +170,8 @@ def api_complaint_options(request):
     company = get_company_by_token(request)
     if not company: return JsonResponse({'error': 'Invalid Token'}, status=401)
     return JsonResponse({
-        'categories': [{'id': c.id, 'name': c.name} for c in company.complaint_categories.all()],
-        'urgencies': [{'id': u.id, 'name': u.name, 'color': u.color} for u in company.urgency_levels.all()],
+        'categories': [{'id': c.id, 'name': c.name} for c in ComplaintCategory.objects.filter(company__isnull=True)],
+        'urgencies': [{'id': u.id, 'name': u.name, 'color': u.color} for u in UrgencyLevel.objects.filter(company__isnull=True)],
         'branches': [{'id': b.id, 'name': b.name} for b in company.branches.all()]
     })
 
@@ -354,8 +354,8 @@ def hosted_form(request, company_slug, feature):
         context['reuniao_id'] = request.GET.get('id', 'Geral')
     elif feature == 'denuncia' or feature == 'status_denuncia':
         context.update({
-            'categories': company.complaint_categories.all(),
-            'urgencies': company.urgency_levels.all()
+            'categories': ComplaintCategory.objects.filter(company__isnull=True),
+            'urgencies': UrgencyLevel.objects.filter(company__isnull=True)
         })
     elif feature == 'avaliacao':
         # Carregado via JS no template para suportar o curso dinâmico

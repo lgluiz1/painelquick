@@ -6,6 +6,7 @@ urlpatterns = [
     path('portal/login/', views.portal_login, name='portal_login'),
     path('portal/dashboard/', views.portal_dashboard, name='portal_dashboard'),
     path('portal/company/<slug:slug>/', views.portal_company_detail, name='portal_company_detail'),
+    path('portal/saas-settings/', views.portal_saas_settings, name='portal_saas_settings'),
     
     # Detalhes de Gestão Scoped por Empresa
     path('portal/company/<slug:slug>/meetings/', views.portal_meetings, name='portal_meetings'),
