@@ -117,10 +117,11 @@ def api_get_complaint_status(request):
     
     try:
         complaint = company.complaints.get(ticket_id=ticket_id)
+        last_update = complaint.updates.filter(is_from_admin=True).last()
         return JsonResponse({
             'status': complaint.get_status_display(),
             'created_at': complaint.created_at.strftime('%d/%m/%Y'),
-            'response': complaint.response or "Seu relato está sendo analisado com todo sigilo pelo Capelão."
+            'response': last_update.message if last_update else "Seu relato está sendo analisado com todo sigilo pelo Capelão."
         })
     except Complaint.DoesNotExist:
         return JsonResponse({'error': 'Código não encontrado ou não pertence a esta empresa.'}, status=404)
