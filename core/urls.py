@@ -5,4 +5,5 @@ from attendance import views
 urlpatterns = [
     path('admin/', admin.site.urls), # Standard admin
     path('', include('attendance.urls')), # Custom app urls
+    path('', include('livestream.urls')), # Livestream app urls
 ]

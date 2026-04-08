@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ event.title }} | {{ company.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: {{ company.primary_color|default:"#e63946" }};
+            --bg-dark: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 30%, var(--primary-color) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 70%, #1e293b 0%, transparent 40%);
+            opacity: 0.15;
+            filter: blur(80px);
+            animation: moveBg 20s infinite alternate linear;
+        }
+
+        @keyframes moveBg {
+            from { transform: scale(1) translate(0, 0); }
+            to { transform: scale(1.2) translate(5%, 5%); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            width: 100%;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo img {
+            height: 40px;
+            object-fit: contain;
+        }
+
+        .logo span {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .event-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .event-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #fff, var(--primary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .event-header p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        /* Form Styling */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2.5rem;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.2);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-submit:hover {
+            filter: brightness(1.2);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(230, 57, 70, 0.3);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        /* Video Styling */
+        .video-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .video-container iframe {
+            width: 100%;
+            height: 100%;
+        }
+
+        .not-started {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .timer-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(230, 57, 70, 0.1);
+            border: 1px solid var(--primary-color);
+            border-radius: 50px;
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .event-header h1 { font-size: 1.8rem; }
+            .glass-card { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                {% if company.logo_url %}
+                    <img src="{{ company.logo_url }}" alt="{{ company.name }}">
+                {% else %}
+                    <span>{{ company.name }}</span>
+                {% endif %}
+            </div>
+            <div class="timer-badge">
+                Live Streaming Hub
+            </div>
+        </header>
+
+        <main>
+            <div class="event-header">
+                <h1>{{ event.title }}</h1>
+                <p>{{ event.start_time|date:"d/m/Y \à\s H:i" }}</p>
+            </div>
+
+            {% if not has_attended %}
+                <!-- Attendance Form -->
+                <div class="glass-card" id="attendanceFormContainer">
+                    <form id="attendanceForm">
+                        <div class="form-group">
+                            <label for="name">Nome Completo</label>
+                            <input type="text" id="name" name="name" placeholder="Digite seu nome..." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="branch">Sua Filial</label>
+                            <select id="branch" name="branch" required>
+                                <option value="">Selecione sua filial</option>
+                                {% for branch in branches %}
+                                    <option value="{{ branch.id }}">{{ branch.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-submit" id="submitBtn">
+                            Confirmar Presença e Entrar
+                        </button>
+                    </form>
+                </div>
+            {% elif not has_started %}
+                <!-- Waiting Room -->
+                <div class="glass-card not-started">
+                    <div class="timer-badge">Aguardando Início</div>
+                    <h2>A transmissão começará em breve</h2>
+                    <p style="margin-top: 1rem; color: var(--text-dim);">
+                        Obrigado pela confirmação, {{ request.session.name|default:"estimado(a)" }}.
+                    </p>
+                    <button class="btn-submit" onclick="window.location.reload()" style="margin-top: 1.5rem; background: transparent; border: 1px solid var(--primary-color);">
+                        Atualizar Página
+                    </button>
+                </div>
+            {% else %}
+                <!-- Stream -->
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/{{ youtube_id }}?autoplay=1" 
+                            title="YouTube video player" frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+            {% endif %}
+        </main>
+    </div>
+
+    <script>
+        const form = document.getElementById('attendanceForm');
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Processando...';
+
+                const data = {
+                    event_id: "{{ event.id }}",
+                    name: document.getElementById('name').value,
+                    branch_id: document.getElementById('branch').value
+                };
+
+                try {
+                    const response = await fetch("{% url 'register_live_attendance' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        window.location.reload();
+                    } else {
+                        alert('Erro: ' + result.error);
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = 'Confirmar Presença e Entrar';
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Erro de conexão ao servidor.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'Confirmar Presença e Entrar';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
