@@ -9,3 +9,13 @@ media/
 .vscode/
 venv/
 env/
+
+# Segredos e Credenciais (Google Cloud, etc)
+client_secret*.json
+*.json
+
+# Inteligência e Cache Local
+brain/
+.gemini/
+.antigravity/
+*.log
