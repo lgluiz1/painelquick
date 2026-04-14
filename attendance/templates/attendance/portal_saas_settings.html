@@ -374,6 +374,9 @@
 
 {% block extra_js %}
 <script>
+    function confirmDelete(title, formId) {
+        uiConfirm(
+            title,
             `Tem certeza que deseja excluir este item global? Isso pode afetar a exibição nos formulários de todos os clientes.`,
             () => { document.getElementById(formId).submit(); }
         );
