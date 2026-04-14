@@ -27,6 +27,7 @@ from livestream.youtube_service import YouTubeService
 from livestream.models import YouTubeConfig, LiveEvent
 from django.utils import timezone
 from datetime import datetime
+from django.conf import settings
 
 # --- UTILITÁRIOS ---
 
