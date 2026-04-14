@@ -108,68 +108,112 @@
                 </div>
             </div>
 
-            <!-- ABA: YOUTUBE (Aba que estava em branco) -->
+            <!-- ABA: YOUTUBE (Foco no Tutorial para o Capelão) -->
             <div class="tab-pane fade" id="youtube" role="tabpanel">
-                <div class="row align-items-center">
-                    <div class="col-md-7">
-                        <h5 class="fw-bold mb-3">Conexão com YouTube API</h5>
-                        <p class="text-muted small mb-4">Gerencie as credenciais para criação automática de Lives e integração com o chat em tempo real.</p>
-                        
-                        {% if youtube_config.credentials %}
-                            <div class="p-4 border rounded-4 bg-light mb-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        {% if youtube_config.channel_thumbnail %}
-                                            <img src="{{ youtube_config.channel_thumbnail }}" class="rounded-circle border border-3 border-white shadow-sm" style="width: 80px;">
-                                        {% else %}
-                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 80px; height: 80px;">
-                                                <i class="bi bi-youtube fs-1"></i>
-                                            </div>
-                                        {% endif %}
+                <div class="row">
+                    <!-- Esquerda: Status e Tutorial -->
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold mb-0"><i class="bi bi-play-circle-fill text-danger me-2"></i>Guia de Transmissão ao Vivo</h5>
+                            {% if youtube_config.credentials %}
+                                <span class="badge bg-success rounded-pill px-3"><i class="bi bi-check-circle me-1"></i>Sistema Pronto</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark rounded-pill px-3"><i class="bi bi-exclamation-triangle me-1"></i>Aguardando Configuração do Luiz</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Card de Passos -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <div class="card h-100 border-0 bg-light p-3 text-center rounded-4">
+                                    <div class="bg-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm" style="width: 50px; height: 50px;">
+                                        <span class="fw-bold text-primary">01</span>
                                     </div>
-                                    <div class="flex-grow-1 ms-4">
-                                        <h4 class="fw-bold mb-1">{{ youtube_config.channel_title|default:"Canal Vinculado" }}</h4>
-                                        <div class="d-flex gap-2">
-                                            <span class="badge bg-success small rounded-pill"><i class="bi bi-check-circle me-1"></i>Conectado</span>
-                                            <span class="text-muted small">ID: {{ youtube_config.channel_id|default:"---"|truncatechars:20 }}</span>
+                                    <h6 class="fw-bold small">Crie o Evento</h6>
+                                    <p class="text-muted" style="font-size: 0.75rem;">Vá em "Eventos Ao Vivo" e agende sua transmissão preenchendo o título e data.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100 border-0 bg-light p-3 text-center rounded-4">
+                                    <div class="bg-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm" style="width: 50px; height: 50px;">
+                                        <span class="fw-bold text-primary">02</span>
+                                    </div>
+                                    <h6 class="fw-bold small">Configure o App</h6>
+                                    <p class="text-muted" style="font-size: 0.75rem;">O portal criará a live no YouTube e te dará os dados de conexão (Servidor e Chave).</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100 border-0 bg-light p-3 text-center rounded-4">
+                                    <div class="bg-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm" style="width: 50px; height: 50px;">
+                                        <span class="fw-bold text-primary">03</span>
+                                    </div>
+                                    <h6 class="fw-bold small">Fique Ao Vivo!</h6>
+                                    <p class="text-muted" style="font-size: 0.75rem;">Clique em "Iniciar Transmissão" no seu app e o sistema abrirá o chat automaticamente.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Softwares Recomendados -->
+                        <div class="bg-white border rounded-4 p-4 shadow-sm">
+                            <h6 class="fw-bold mb-3">Qual aplicativo utilizar?</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center p-3 border rounded-3">
+                                        <i class="bi bi-laptop fs-2 text-primary me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1 fw-bold">OBS Studio</h6>
+                                            <p class="small text-muted mb-0">Melhor opção para PC/Notebook.</p>
+                                            <a href="https://obsproject.com/pt-br/download" target="_blank" class="small text-decoration-none fw-bold mt-1 d-block">Baixar agora <i class="bi bi-box-arrow-up-right ms-1"></i></a>
                                         </div>
                                     </div>
                                 </div>
-                                <hr class="my-4 opacity-10">
-                                <div class="d-flex justify-content-between">
-                                    <button class="btn btn-outline-dark btn-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#updateYoutubeModal">
-                                        <i class="bi bi-pencil me-2"></i>Atualizar JSON
-                                    </button>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center p-3 border rounded-3">
+                                        <i class="bi bi-phone fs-2 text-success me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1 fw-bold">PRISM Live Studio</h6>
+                                            <p class="small text-muted mb-0">Ideal para lives pelo Celular.</p>
+                                            <a href="https://prismlive.com/" target="_blank" class="small text-decoration-none fw-bold mt-1 d-block">Baixar agora <i class="bi bi-box-arrow-up-right ms-1"></i></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direita: Área do Luiz (Configurações Técnicas) -->
+                    <div class="col-md-4 mt-4 mt-md-0 border-start ps-md-4">
+                        <div class="alert alert-dark border-0 shadow-sm rounded-4 mb-3">
+                            <h6 class="fw-bold small mb-1">⚙️ Área do Desenvolvedor (Luiz)</h6>
+                            <p style="font-size: 0.7rem;" class="opacity-75 mb-0">O Capelão não mexe aqui. Use para configurar a API do Google Cloud.</p>
+                        </div>
+                        
+                        {% if youtube_config.credentials %}
+                        <div class="card border border-2 border-primary rounded-4 overflow-hidden">
+                            <div class="card-body p-3 text-center">
+                                {% if youtube_config.channel_thumbnail %}
+                                    <img src="{{ youtube_config.channel_thumbnail }}" class="rounded-circle mb-2 shadow-sm" style="width: 60px;">
+                                {% endif %}
+                                <h6 class="fw-bold mb-1">{{ youtube_config.channel_title|default:"Canal Ativo" }}</h6>
+                                <p class="text-muted truncate mb-3" style="font-size: 0.65rem;">ID: {{ youtube_config.channel_id|truncatechars:15 }}</p>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-sm btn-outline-dark rounded-pill" data-bs-toggle="modal" data-bs-target="#updateYoutubeModal">Atualizar JSON</button>
                                     <form method="POST" id="disconnect-form">
                                         {% csrf_token %}
                                         <input type="hidden" name="action" value="disconnect_youtube">
-                                        <button type="button" class="btn btn-danger btn-sm rounded-pill px-4" onclick="confirmDisconnect()">
-                                            <i class="bi bi-plug-fill me-2"></i>Desconectar Canal
-                                        </button>
+                                        <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none small" onclick="confirmDisconnect()">Desvincular Canal</button>
                                     </form>
                                 </div>
                             </div>
-                        {% else %}
-                            <div class="p-5 border-dashed rounded-4 text-center bg-light">
-                                <i class="bi bi-youtube text-danger display-4 mb-3"></i>
-                                <h5>Nenhum canal vinculado</h5>
-                                <p class="text-muted small px-md-5">Cole as credenciais JSON do seu projeto no Google Cloud Console para ativar as transmissões ao vivo dentro do portal.</p>
-                                <button class="btn btn-primary rounded-pill px-5 fw-bold" data-bs-toggle="modal" data-bs-target="#updateYoutubeModal">
-                                    <i class="bi bi-link-45deg me-2"></i>Configurar Agora
-                                </button>
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-5 ps-md-5">
-                        <div class="card border-0 shadow-sm rounded-4 bg-dark text-white p-4">
-                            <h6 class="fw-bold text-accent"><i class="bi bi-info-circle me-2"></i>Como configurar?</h6>
-                            <ol class="small mt-3 mb-0 ps-3">
-                                <li class="mb-2">Acesse o Google Cloud Console.</li>
-                                <li class="mb-2">Habilite a <strong>YouTube Data API v3</strong>.</li>
-                                <li class="mb-2">Crie um ID de Cliente OAuth 2.0.</li>
-                                <li class="mb-2">Baixe o arquivo JSON e cole o conteúdo na configuração.</li>
-                            </ol>
                         </div>
+                        {% else %}
+                        <div class="p-4 border-dashed rounded-4 text-center">
+                            <p class="small text-muted">Aguardando configuração de API.</p>
+                            <button class="btn btn-primary btn-sm rounded-pill w-100" data-bs-toggle="modal" data-bs-target="#updateYoutubeModal">
+                                Configurar API
+                            </button>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
