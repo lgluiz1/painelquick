@@ -847,16 +847,27 @@ def youtube_callback(request):
     """Processa o retorno do Google e salva tokens."""
     from django.urls import reverse
     from django.contrib import messages
+    import traceback
     
     state = request.session.get('oauth_state')
     scheme = 'https'
     redirect_uri = f"{scheme}://{request.get_host()}{reverse('youtube_callback')}"
     
+    print(f"DEBUG YOUTUBE: Iniciando callback. State na sessão: {state}")
+    
     try:
         flow = YouTubeService.get_flow(redirect_uri)
-        flow.fetch_token(authorization_response=request.build_absolute_uri().replace('http:', 'https:') if not settings.DEBUG else request.build_absolute_uri())
+        auth_response = request.build_absolute_uri()
+        if not settings.DEBUG:
+            auth_response = auth_response.replace('http:', 'https:')
+            
+        print(f"DEBUG YOUTUBE: Auth Response URI: {auth_response}")
+        
+        flow.fetch_token(authorization_response=auth_response)
         
         creds = flow.credentials
+        print(f"DEBUG YOUTUBE: Tokens obtidos com sucesso. Salvando no banco...")
+        
         config = YouTubeConfig.get_solo()
         config.credentials = {
             'token': creds.token,
@@ -870,6 +881,7 @@ def youtube_callback(request):
         config.save()
         
         # Busca informações do canal para ficar bonitão no portal
+        print(f"DEBUG YOUTUBE: Buscando informações do canal...")
         yt_service = YouTubeService()
         channels = yt_service.list_channels()
         if channels:
@@ -878,10 +890,17 @@ def youtube_callback(request):
             config.channel_title = channel['snippet']['title']
             config.channel_thumbnail = channel['snippet']['thumbnails']['default']['url']
             config.save()
+            messages.success(request, f"Sucesso! Canal '{config.channel_title}' vinculado.")
+            print(f"DEBUG YOUTUBE: Canal '{config.channel_title}' vinculado com sucesso.")
+        else:
+            messages.warning(request, "Login realizado, mas nenhum canal do YouTube foi encontrado nesta conta.")
+            print(f"DEBUG YOUTUBE: Nenhum canal encontrado.")
             
-        messages.success(request, f"Sucesso! Canal '{config.channel_title}' vinculado.")
     except Exception as e:
-        messages.error(request, f"Erro no callback do YouTube: {str(e)}")
+        error_msg = f"Erro no callback do YouTube: {str(e)}"
+        print(f"ERROR YOUTUBE: {error_msg}")
+        traceback.print_exc()
+        messages.error(request, error_msg)
         
     return redirect('portal_saas_settings')
 
