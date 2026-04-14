@@ -824,9 +824,8 @@ def youtube_auth(request):
     from django.urls import reverse
     import os
     
-    # Define a URI de redirecionamento absoluta
-    # Se estiver em produção, o host será o seu domínio
-    scheme = 'https' if not settings.DEBUG else 'http'
+    # Forçamos HTTPS pois o domínio ja possui SSL ativo na VPS
+    scheme = 'https'
     redirect_uri = f"{scheme}://{request.get_host()}{reverse('youtube_callback')}"
     
     try:
@@ -850,7 +849,7 @@ def youtube_callback(request):
     from django.contrib import messages
     
     state = request.session.get('oauth_state')
-    scheme = 'https' if not settings.DEBUG else 'http'
+    scheme = 'https'
     redirect_uri = f"{scheme}://{request.get_host()}{reverse('youtube_callback')}"
     
     try:
