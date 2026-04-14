@@ -181,36 +181,43 @@
                         </div>
                     </div>
 
-                    <!-- Direita: Área do Luiz (Configurações Técnicas) -->
+                    <!-- Direita: Gestão de Integração (Painel Profissional) -->
                     <div class="col-md-4 mt-4 mt-md-0 border-start ps-md-4">
                         <div class="alert alert-dark border-0 shadow-sm rounded-4 mb-3">
-                            <h6 class="fw-bold small mb-1">⚙️ Área do Desenvolvedor (Luiz)</h6>
-                            <p style="font-size: 0.7rem;" class="opacity-75 mb-0">O Capelão não mexe aqui. Use para configurar a API do Google Cloud.</p>
+                            <h6 class="fw-bold small mb-1">⚙️ Gestão de Integração Técnica</h6>
+                            <p style="font-size: 0.72rem;" class="opacity-75 mb-0">
+                                Esta seção é dedicada à integração com o ecossistema Google Cloud. Todas as transmissões ao vivo agendadas no portal serão geradas automaticamente através do canal vinculado abaixo.
+                            </p>
                         </div>
                         
                         {% if youtube_config.credentials %}
-                        <div class="card border border-2 border-primary rounded-4 overflow-hidden">
+                        <div class="card border border-2 border-primary rounded-4 overflow-hidden shadow-sm">
                             <div class="card-body p-3 text-center">
+                                <span class="text-uppercase fw-bold text-muted mb-2 d-block" style="font-size: 0.6rem; letter-spacing: 1px;">Canal de Transmissão Ativo</span>
                                 {% if youtube_config.channel_thumbnail %}
-                                    <img src="{{ youtube_config.channel_thumbnail }}" class="rounded-circle mb-2 shadow-sm" style="width: 60px;">
+                                    <img src="{{ youtube_config.channel_thumbnail }}" class="rounded-circle mb-2 shadow-sm border border-2 border-white" style="width: 60px;">
                                 {% endif %}
-                                <h6 class="fw-bold mb-1">{{ youtube_config.channel_title|default:"Canal Ativo" }}</h6>
-                                <p class="text-muted truncate mb-3" style="font-size: 0.65rem;">ID: {{ youtube_config.channel_id|truncatechars:15 }}</p>
+                                <h6 class="fw-bold mb-1">{{ youtube_config.channel_title|default:"Serviço Vinculado" }}</h6>
+                                <p class="text-muted truncate mb-3" style="font-size: 0.65rem;">Identificador: {{ youtube_config.channel_id|truncatechars:20 }}</p>
                                 <div class="d-grid gap-2">
-                                    <button class="btn btn-sm btn-outline-dark rounded-pill" data-bs-toggle="modal" data-bs-target="#updateYoutubeModal">Atualizar JSON</button>
+                                    <button class="btn btn-sm btn-outline-dark rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#updateYoutubeModal" style="font-size: 0.7rem;">
+                                        <i class="bi bi-gear-fill me-1"></i>Atualizar Credenciais
+                                    </button>
                                     <form method="POST" id="disconnect-form">
                                         {% csrf_token %}
                                         <input type="hidden" name="action" value="disconnect_youtube">
-                                        <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none small" onclick="confirmDisconnect()">Desvincular Canal</button>
+                                        <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none fw-bold" onclick="confirmDisconnect()" style="font-size: 0.7rem;">
+                                            <i class="bi bi-x-circle me-1"></i>Desvincular Serviço
+                                        </button>
                                     </form>
                                 </div>
                             </div>
                         </div>
                         {% else %}
-                        <div class="p-4 border-dashed rounded-4 text-center">
-                            <p class="small text-muted">Aguardando configuração de API.</p>
-                            <button class="btn btn-primary btn-sm rounded-pill w-100" data-bs-toggle="modal" data-bs-target="#updateYoutubeModal">
-                                Configurar API
+                        <div class="p-4 border-dashed rounded-4 text-center bg-light">
+                            <p class="small text-muted mb-3">Aguardando vinculação com conta Google para automação de lives.</p>
+                            <button class="btn btn-primary btn-sm rounded-pill w-100 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#updateYoutubeModal">
+                                <i class="bi bi-link-45deg me-1"></i>Vincular Conta
                             </button>
                         </div>
                         {% endif %}
