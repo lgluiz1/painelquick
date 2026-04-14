@@ -15,6 +15,11 @@ urlpatterns = [
     path('portal/company/<slug:slug>/', views.portal_company_detail, name='portal_company_detail'),
     path('portal/saas-settings/', views.portal_saas_settings, name='portal_saas_settings'),
     
+    # Autenticação YouTube
+    path('portal/youtube/auth/', views.youtube_auth, name='youtube_auth'),
+    path('portal/youtube/callback/', views.youtube_callback, name='youtube_callback'),
+    path('portal/youtube/disconnect/', views.disconnect_youtube, name='disconnect_youtube'),
+    
     # Detalhes de Gestão Scoped por Empresa
     path('portal/company/<slug:slug>/meetings/', views.portal_meetings, name='portal_meetings'),
     path('portal/company/<slug:slug>/meetings/<int:pk>/', views.portal_meeting_detail, name='portal_meeting_detail'),

@@ -777,23 +777,16 @@ def export_meeting_pdf(request, slug, pk):
 def portal_saas_settings(request):
     from livestream.models import YouTubeConfig
     from django.contrib import messages
-    config = YouTubeConfig.get_solo()
-    global_config = GlobalConfig.get_solo()
+    # Verificação de arquivo físico na VPS
+    import os
+    from django.conf import settings
+    secrets_file = os.path.join(settings.BASE_DIR, 'client_secret_337151481642-jne3vmg96u3jnghcm30t68tb4q18os97.apps.googleusercontent.com.json')
+    has_secrets_file = os.path.exists(secrets_file)
 
     if request.method == 'POST':
         action = request.POST.get('action')
         
-        if action == 'update_youtube':
-            try:
-                creds_str = request.POST.get('credentials')
-                config.credentials = json.loads(creds_str)
-                config.is_active = request.POST.get('is_active') == 'on'
-                config.save()
-                messages.success(request, "Configuração do YouTube atualizada!")
-            except Exception as e:
-                messages.error(request, f"Erro ao salvar JSON: {str(e)}")
-        
-        elif action == 'update_global':
+        if action == 'update_global':
             global_config.whatsapp_number = request.POST.get('whatsapp_number')
             global_config.contact_email = request.POST.get('contact_email')
             global_config.notify_email = request.POST.get('notify_email')
@@ -813,21 +806,97 @@ def portal_saas_settings(request):
             )
         elif action == 'delete_urgency':
             UrgencyLevel.objects.filter(id=request.POST.get('urgency_id'), company__isnull=True).delete()
-        elif action == 'disconnect_youtube':
-            config = YouTubeConfig.get_solo()
-            config.credentials = {}
-            config.channel_id = None
-            config.channel_title = None
-            config.channel_thumbnail = None
-            config.save()
+        
         return redirect('portal_saas_settings')
 
     context = {
         'categories': ComplaintCategory.objects.filter(company__isnull=True).order_by('name'),
         'urgencies': UrgencyLevel.objects.filter(company__isnull=True),
         'youtube_config': YouTubeConfig.get_solo(),
+        'has_secrets_file': has_secrets_file,
     }
     return render(request, 'attendance/portal_saas_settings.html', context)
+
+@staff_role_required(allowed_roles=['ADMIN'])
+def youtube_auth(request):
+    """Redireciona para o login do Google."""
+    from django.urls import reverse
+    import os
+    
+    # Define a URI de redirecionamento absoluta
+    # Se estiver em produção, o host será o seu domínio
+    scheme = 'https' if not settings.DEBUG else 'http'
+    redirect_uri = f"{scheme}://{request.get_host()}{reverse('youtube_callback')}"
+    
+    try:
+        flow = YouTubeService.get_flow(redirect_uri)
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true',
+            prompt='consent'
+        )
+        request.session['oauth_state'] = state
+        return redirect(authorization_url)
+    except Exception as e:
+        from django.contrib import messages
+        messages.error(request, f"Erro ao iniciar autenticação: {str(e)}")
+        return redirect('portal_saas_settings')
+
+@staff_role_required(allowed_roles=['ADMIN'])
+def youtube_callback(request):
+    """Processa o retorno do Google e salva tokens."""
+    from django.urls import reverse
+    from django.contrib import messages
+    
+    state = request.session.get('oauth_state')
+    scheme = 'https' if not settings.DEBUG else 'http'
+    redirect_uri = f"{scheme}://{request.get_host()}{reverse('youtube_callback')}"
+    
+    try:
+        flow = YouTubeService.get_flow(redirect_uri)
+        flow.fetch_token(authorization_response=request.build_absolute_uri().replace('http:', 'https:') if not settings.DEBUG else request.build_absolute_uri())
+        
+        creds = flow.credentials
+        config = YouTubeConfig.get_solo()
+        config.credentials = {
+            'token': creds.token,
+            'refresh_token': creds.refresh_token,
+            'token_uri': creds.token_uri,
+            'client_id': creds.client_id,
+            'client_secret': creds.client_secret,
+            'scopes': creds.scopes
+        }
+        config.is_active = True
+        config.save()
+        
+        # Busca informações do canal para ficar bonitão no portal
+        yt_service = YouTubeService()
+        channels = yt_service.list_channels()
+        if channels:
+            channel = channels[0]
+            config.channel_id = channel['id']
+            config.channel_title = channel['snippet']['title']
+            config.channel_thumbnail = channel['snippet']['thumbnails']['default']['url']
+            config.save()
+            
+        messages.success(request, f"Sucesso! Canal '{config.channel_title}' vinculado.")
+    except Exception as e:
+        messages.error(request, f"Erro no callback do YouTube: {str(e)}")
+        
+    return redirect('portal_saas_settings')
+
+@staff_role_required(allowed_roles=['ADMIN'])
+def disconnect_youtube(request):
+    """Desvincula a conta do YouTube."""
+    from django.contrib import messages
+    config = YouTubeConfig.get_solo()
+    config.credentials = {}
+    config.channel_id = None
+    config.channel_title = None
+    config.channel_thumbnail = None
+    config.save()
+    messages.info(request, "Serviço do YouTube desvinculado com sucesso.")
+    return redirect('portal_saas_settings')
 
 def portal_logout(request):
     logout(request)

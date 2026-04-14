@@ -184,9 +184,9 @@
                     <!-- Direita: Gestão de Integração (Painel Profissional) -->
                     <div class="col-md-4 mt-4 mt-md-0 border-start ps-md-4">
                         <div class="alert alert-dark border-0 shadow-sm rounded-4 mb-3">
-                            <h6 class="fw-bold small mb-1">⚙️ Gestão de Integração Técnica</h6>
+                            <h6 class="fw-bold small mb-1">⚙️ Infraestrutura de Transmissão</h6>
                             <p style="font-size: 0.72rem;" class="opacity-75 mb-0">
-                                Esta seção é dedicada à integração com o ecossistema Google Cloud. Todas as transmissões ao vivo agendadas no portal serão geradas automaticamente através do canal vinculado abaixo.
+                                Gestão automatizada via Google Cloud. As lives são geradas diretamente no canal de transmissão configurado abaixo.
                             </p>
                         </div>
                         
@@ -200,26 +200,27 @@
                                 <h6 class="fw-bold mb-1">{{ youtube_config.channel_title|default:"Serviço Vinculado" }}</h6>
                                 <p class="text-muted truncate mb-3" style="font-size: 0.65rem;">Identificador: {{ youtube_config.channel_id|truncatechars:20 }}</p>
                                 <div class="d-grid gap-2">
-                                    <button class="btn btn-sm btn-outline-dark rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#updateYoutubeModal" style="font-size: 0.7rem;">
-                                        <i class="bi bi-gear-fill me-1"></i>Atualizar Credenciais
-                                    </button>
-                                    <form method="POST" id="disconnect-form">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="disconnect_youtube">
-                                        <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none fw-bold" onclick="confirmDisconnect()" style="font-size: 0.7rem;">
-                                            <i class="bi bi-x-circle me-1"></i>Desvincular Serviço
-                                        </button>
-                                    </form>
+                                    <a href="{% url 'disconnect_youtube' %}" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" style="font-size: 0.7rem;">
+                                        <i class="bi bi-x-circle me-1"></i>Desvincular Serviço
+                                    </a>
                                 </div>
                             </div>
                         </div>
                         {% else %}
-                        <div class="p-4 border-dashed rounded-4 text-center bg-light">
-                            <p class="small text-muted mb-3">Aguardando vinculação com conta Google para automação de lives.</p>
-                            <button class="btn btn-primary btn-sm rounded-pill w-100 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#updateYoutubeModal">
-                                <i class="bi bi-link-45deg me-1"></i>Vincular Conta
-                            </button>
-                        </div>
+                            {% if has_secrets_file %}
+                            <div class="p-4 border border-primary border-dashed rounded-4 text-center bg-white shadow-sm">
+                                <i class="bi bi-google text-primary fs-3 mb-2"></i>
+                                <p class="small text-muted mb-3">Infraestrutura detectada. Falta vincular o canal de transmissão.</p>
+                                <a href="{% url 'youtube_auth' %}" class="btn btn-primary btn-sm rounded-pill w-100 fw-bold shadow-sm">
+                                    <i class="bi bi-link-45deg me-1"></i>Vincular Canal agora
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="p-4 border-dashed rounded-4 text-center bg-light">
+                                <i class="bi bi-shield-lock text-muted fs-3 mb-2"></i>
+                                <p class="small text-muted mb-0">Aguardando homologação da infraestrutura técnica (Arquivo JSON ausente na VPS).</p>
+                            </div>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -342,33 +343,6 @@
     </div>
 </div>
 
-<!-- Modal: Configurar YouTube -->
-<div class="modal fade" id="updateYoutubeModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Configuração API YouTube</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="update_youtube">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">JSON das Credenciais</label>
-                        <textarea name="credentials" class="form-control rounded-3 font-monospace" rows="8" required placeholder='Cole aqui o conteúdo do arquivo JSON baixado do Google Cloud...'></textarea>
-                    </div>
-                    <div class="form-check form-switch mb-4">
-                        <input class="form-check-input" type="checkbox" name="is_active" id="ytActive" checked>
-                        <label class="form-check-label small" for="ytActive">Ativar Integração</label>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 shadow-sm fw-bold">Salvar Credenciais</button>
-                    <p class="text-muted small text-center mt-3 mb-0">Nota: O sistema usará estas credenciais para autenticar via OAuth2.</p>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 {% endblock %}
 
