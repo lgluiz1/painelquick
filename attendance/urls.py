@@ -2,10 +2,16 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # --- PÁGINA INICIAL PÚBLICA (LANDING PAGE) ---
+    path('', views.home, name='home'),
+
     # --- PORTAL DO CAPELÃO (ADMIN CENTRAL) ---
     path('portal/login/', views.portal_login, name='portal_login'),
     path('portal/logout/', views.portal_logout, name='portal_logout'),
     path('portal/dashboard/', views.portal_dashboard, name='portal_dashboard'),
+    path('portal/empresas/', views.portal_companies, name='portal_companies'),
+    path('portal/global-report/', views.export_global_report_excel, name='export_global_report_excel'),
+    path('portal/users/', views.portal_users, name='portal_users'),
     path('portal/company/<slug:slug>/', views.portal_company_detail, name='portal_company_detail'),
     path('portal/saas-settings/', views.portal_saas_settings, name='portal_saas_settings'),
     

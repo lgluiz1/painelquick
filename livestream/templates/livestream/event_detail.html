@@ -276,6 +276,9 @@
                 </div>
             {% endif %}
         </main>
+        <footer style="margin-top: 3rem; text-align: center; padding-bottom: 2rem; opacity: 0.5; font-size: 0.8rem; color: white;">
+            Desenvolvido por <a href="https://luizgustavo.tech" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: bold;">luizgustavo.tech</a>
+        </footer>
     </div>
 
     <script>
@@ -298,6 +301,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
                         },
                         body: JSON.stringify(data)
                     });
@@ -318,6 +322,38 @@
                 }
             });
         }
+
+        // Heartbeat Logic
+        {% if has_attended and has_started %}
+        const heartbeatInterval = 60000; // 1 minute
+        const heartbeatData = {
+            event_id: "{{ event.id }}",
+            name: "{{ request.session.attendee_name }}"
+        };
+
+        function sendHeartbeat() {
+            fetch("{% url 'live_heartbeat' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(heartbeatData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Heartbeat sync:', data);
+            })
+            .catch(error => {
+                console.error('Heartbeat error:', error);
+            });
+        }
+
+        // Send first heartbeat immediately
+        sendHeartbeat();
+        // Set interval
+        setInterval(sendHeartbeat, heartbeatInterval);
+        {% endif %}
     </script>
 </body>
 </html>

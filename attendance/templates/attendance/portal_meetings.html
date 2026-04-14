@@ -4,17 +4,38 @@
 {% block header_title %}Gerenciar Reuniões - {{ company.name }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb m-0">
-            <li class="breadcrumb-item"><a href="{% url 'portal_company_detail' company.slug %}">{{ company.name }}</a></li>
-            <li class="breadcrumb-item active">Reuniões</li>
-        </ol>
-    </nav>
-    <button class="btn btn-primary d-flex align-items-center shadow-sm" data-bs-toggle="modal" data-bs-target="#newMeetingModal">
-        <i class="bi bi-plus-lg me-2"></i>Nova Reunião
-    </button>
+<div class="row align-items-center mb-4">
+    <div class="col-md-7">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb m-0 bg-transparent p-0">
+                <li class="breadcrumb-item"><a href="{% url 'portal_company_detail' company.slug %}" class="text-decoration-none">{{ company.name }}</a></li>
+                <li class="breadcrumb-item active">Reuniões</li>
+            </ol>
+        </nav>
+        <h3 class="fw-bold m-0"><i class="bi bi-camera-reels me-2 text-primary"></i>Reuniões e Transmissões</h3>
+    </div>
+    <div class="col-md-5 text-md-end mt-3 mt-md-0">
+        <div class="btn-group shadow-sm">
+            <button class="btn btn-white bg-white border" onclick="copyToClipboard('{{ request.scheme }}://{{ request.get_host }}/l/{{ company.slug }}/', 'Link da Central de Lives copiado! 🌐')">
+                <i class="bi bi-share me-2 text-primary"></i>Central de Lives
+            </button>
+            <button class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#newMeetingModal">
+                <i class="bi bi-plus-lg me-2"></i>Nova Reunião
+            </button>
+        </div>
+    </div>
 </div>
+
+{% if meetings %}
+<div class="alert alert-primary border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center">
+    <div class="bg-primary rounded-circle p-2 me-3 text-white">
+        <i class="bi bi-info-lg"></i>
+    </div>
+    <div class="small">
+        <strong>Dica de Mestre:</strong> Compartilhe o link da <a href="/l/{{ company.slug }}/" target="_blank" class="fw-bold text-primary">Central de Lives</a> com sua equipe. É lá que eles encontram todas as lives e gravações em um só lugar, estilo Netflix!
+    </div>
+</div>
+{% endif %}
 
 <div class="card border-0 shadow-sm rounded-4">
     <div class="card-body p-0">
@@ -23,7 +44,8 @@
                 <thead class="bg-light">
                     <tr>
                         <th class="ps-4 py-3">Título da Reunião</th>
-                        <th class="py-3">Data de Criação</th>
+                        <th class="py-3">Data/Hora</th>
+                        <th class="py-3 text-center">YouTube</th>
                         <th class="py-3 text-center">Presenças</th>
                         <th class="py-3 pe-4 text-end">Ações</th>
                     </tr>
@@ -32,14 +54,68 @@
                     {% for meeting in meetings %}
                     <tr>
                         <td class="ps-4 fw-bold text-dark">{{ meeting.title }}</td>
-                        <td class="text-muted small">{{ meeting.created_at|date:"d/m/Y H:i" }}</td>
+                        <td class="text-muted small">
+                            {% if meeting.start_time %}
+                                {{ meeting.start_time|date:"d/m/Y H:i" }}
+                            {% else %}
+                                {{ meeting.created_at|date:"d/m/Y H:i" }} (Criação)
+                            {% endif %}
+                        </td>
                         <td class="text-center">
-                            <span class="badge bg-primary-subtle text-primary rounded-pill px-3">{{ meeting.attendances.count }}</span>
+                            {% if meeting.is_youtube_live %}
+                                {% if meeting.live_event %}
+                                    {% if meeting.live_event.status == 'live' %}
+                                        <span class="badge bg-danger rounded-pill px-2">
+                                            <i class="bi bi-broadcast me-1"></i>AO VIVO
+                                        </span>
+                                    {% elif meeting.live_event.status == 'waiting' %}
+                                        <span class="badge bg-warning text-dark rounded-pill px-2">
+                                            <i class="bi bi-clock me-1"></i>AGENDADA
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary rounded-pill px-2 opacity-75">
+                                            <i class="bi bi-check-all me-1"></i>GRAVADA
+                                        </span>
+                                    {% endif %}
+                                    
+                                    <div class="mt-1 d-flex flex-column align-items-center gap-1">
+                                        <div class="d-flex gap-2 justify-content-center">
+                                            <button class="btn btn-sm btn-link p-0 text-muted" style="font-size: 0.7rem;" 
+                                                    onclick="copyToClipboard('{{ meeting.youtube_stream_key }}', 'Chave copiada para o OBS! 🎥')">
+                                                <i class="bi bi-key me-1"></i>Key OBS
+                                            </button>
+                                            <button class="btn btn-sm btn-link p-0 text-primary" style="font-size: 0.7rem;" 
+                                                    onclick="copyToClipboard('{{ request.scheme }}://{{ request.get_host }}{% url 'live_event_detail' company.slug meeting.live_event.slug %}', 'Link da Live copiado! 🌐')">
+                                                <i class="bi bi-link-45deg me-1"></i>Link Público
+                                            </button>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2">Sincronizando...</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted small">Reunião Local</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if meeting.live_event %}
+                                <span class="badge bg-primary-subtle text-primary rounded-pill px-3" title="Presenças na Live">
+                                    {{ meeting.live_event.attendances.count }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3" title="Assinaturas Físicas">
+                                    {{ meeting.attendances.count }}
+                                </span>
+                            {% endif %}
                         </td>
                         <td class="pe-4 text-end">
-                            <div class="btn-group">
-                                <a href="{% url 'portal_meeting_detail' company.slug meeting.pk %}" class="btn btn-sm btn-outline-primary">Ver Lista</a>
-                                <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ meeting.id }}', '{{ meeting.title }}')">
+                            <div class="btn-group gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        onclick="editMeeting('{{ meeting.id }}', '{{ meeting.title|escapejs }}', '{{ meeting.start_time|date:'Y-m-d\TH:i' }}', '{{ meeting.description|escapejs }}', {% if meeting.live_event and meeting.live_event.is_public %}true{% else %}false{% endif %})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <a href="{% url 'portal_meeting_detail' company.slug meeting.pk %}" class="btn btn-sm btn-outline-primary shadow-sm px-3">Ver Lista</a>
+                                <button class="btn btn-sm btn-outline-danger shadow-sm" onclick="confirmDelete('{{ meeting.id }}', '{{ meeting.title }}')">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -47,7 +123,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center py-5 text-muted">Nenhuma reunião cadastrada para esta empresa.</td>
+                        <td colspan="5" class="text-center py-5 text-muted">Nenhuma reunião cadastrada para esta empresa.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -69,10 +145,84 @@
                     {% csrf_token %}
                     <input type="hidden" name="action" value="create_meeting">
                     <div class="mb-3">
-                        <label class="form-label">Título/Assunto</label>
+                        <label class="form-label fw-bold small">Título/Assunto</label>
                         <input type="text" class="form-control" name="title" required placeholder="Ex: Reunião de Alinhamento Semanal">
                     </div>
-                    <button type="submit" class="btn btn-primary w-100 py-3 shadow-sm fw-bold">Criar Reunião</button>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Horário Previsto</label>
+                        <input type="datetime-local" class="form-control" name="start_time" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Descrição da Live (Aparece para os participantes)</label>
+                        <textarea class="form-control" name="description" rows="3" placeholder="Escreva aqui recados, links fixados ou informações da live... Suporta Emojis! ✨"></textarea>
+                    </div>
+
+                    {% if youtube_config.channel_id %}
+                    <div class="mb-3 p-3 bg-light rounded-3 border">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" name="is_youtube_live" id="checkYoutube" checked>
+                            <label class="form-check-label fw-bold small" for="checkYoutube">Agendar Automaticamente no YouTube</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_public" id="checkPublic">
+                            <label class="form-check-label fw-bold small" for="checkPublic">Exibir no Dashboard Público da Empresa</label>
+                        </div>
+                        <p class="small text-muted mb-0 mt-2" style="font-size: 0.75rem;">
+                            A live será criada como "Não Listada". Se estiver marcada para o dashboard, ela aparecerá na galeria de vídeos da empresa.
+                        </p>
+                    </div>
+                    {% else %}
+                    <div class="mb-3 p-3 bg-light rounded-3 border border-dashed">
+                        <p class="small text-muted mb-0"><i class="bi bi-exclamation-triangle me-1"></i>O agendamento no YouTube está desativado. Contate o administrador do sistema.</p>
+                    </div>
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 shadow-sm fw-bold">Criar e Agendar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Reunião -->
+<div class="modal fade" id="editMeetingModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold">Editar Reunião / Live</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="edit_meeting">
+                    <input type="hidden" name="meeting_id" id="edit_meeting_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Título/Assunto</label>
+                        <input type="text" class="form-control" name="title" id="edit_title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Horário Previsto</label>
+                        <input type="datetime-local" class="form-control" name="start_time" id="edit_start_time" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Descrição da Live</label>
+                        <textarea class="form-control" name="description" id="edit_description" rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-3 p-3 bg-light rounded-3 border">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_public" id="edit_checkPublic">
+                            <label class="form-check-label fw-bold small" for="edit_checkPublic">Exibir no Dashboard Público da Empresa</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 shadow-sm fw-bold rounded-3">Salvar Alterações</button>
                 </form>
             </div>
         </div>
@@ -87,6 +237,29 @@
 </form>
 
 <script>
+    let editModal;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        editModal = new bootstrap.Modal(document.getElementById('editMeetingModal'));
+    });
+
+    function editMeeting(id, title, date, desc, isPublic) {
+        document.getElementById('edit_meeting_id').value = id;
+        document.getElementById('edit_title').value = title;
+        document.getElementById('edit_start_time').value = date;
+        document.getElementById('edit_description').value = desc;
+        document.getElementById('edit_checkPublic').checked = isPublic;
+        editModal.show();
+    }
+
+    function copyToClipboard(text, message) {
+        navigator.clipboard.writeText(text).then(() => {
+            uiToast(message || "Copiado! ✅");
+        }).catch(err => {
+            console.error('Erro ao copiar: ', err);
+        });
+    }
+
     function confirmDelete(id, name) {
         uiConfirm(
             'Excluir Reunião',

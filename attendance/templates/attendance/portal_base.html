@@ -53,12 +53,36 @@
         </h5>
     </div>
     <nav class="nav flex-column">
-        <a class="nav-link active" href="{% url 'portal_dashboard' %}"><i class="bi bi-grid-1x2"></i> Dashboard</a>
-        <a class="nav-link" href="#"><i class="bi bi-building"></i> Empresas</a>
-        <a class="nav-link" href="#"><i class="bi bi-people"></i> Usuários</a>
-        <a class="nav-link" href="{% url 'portal_saas_settings' %}"><i class="bi bi-gear"></i> Configurações</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'portal_dashboard' %}active{% endif %}" href="{% url 'portal_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        
+        {% if request.user.is_superuser or request.user.staff_profile.role == 'ADMIN' or request.user.staff_profile.role == 'AUDITOR' %}
+        <a class="nav-link {% if request.resolver_match.url_name == 'portal_companies' %}active{% endif %}" href="{% url 'portal_companies' %}">
+            <i class="bi bi-building"></i> Empresas
+        </a>
+        {% endif %}
+
+        {% if request.user.is_superuser or request.user.staff_profile.role == 'ADMIN' %}
+        <a class="nav-link {% if request.resolver_match.url_name == 'portal_users' %}active{% endif %}" href="{% url 'portal_users' %}">
+            <i class="bi bi-people"></i> Usuários
+        </a>
+        {% endif %}
+
+        <a class="nav-link {% if request.resolver_match.url_name == 'portal_saas_settings' %}active{% endif %}" href="{% url 'portal_saas_settings' %}">
+            <i class="bi bi-gear"></i> Configurações
+        </a>
+
         <div class="mt-5 border-top border-secondary pt-3">
-            <a class="nav-link text-danger" href="{% url 'portal_logout' %}"><i class="bi bi-box-arrow-left"></i> Sair</a>
+            <a class="nav-link text-danger mb-4" href="{% url 'portal_logout' %}">
+                <i class="bi bi-box-arrow-left"></i> Sair
+            </a>
+            <div class="px-4 pb-4">
+                <p class="text-secondary" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                    DESENVOLVIDO POR<br>
+                    <a href="https://luizgustavo.tech" target="_blank" class="text-white text-decoration-none fw-bold opacity-75">luizgustavo.tech</a>
+                </p>
+            </div>
         </div>
     </nav>
 </div>
@@ -78,6 +102,22 @@
             </ul>
         </div>
     </header>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4" role="alert">
+                <div class="d-flex align-items-center">
+                    {% if message.tags == 'success' %}
+                        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                    {% elif message.tags == 'error' %}
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    {% endif %}
+                    <div>{{ message }}</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
 
     {% block content %}{% endblock %}
 </div>

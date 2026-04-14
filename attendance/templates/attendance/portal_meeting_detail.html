@@ -26,9 +26,149 @@
 </div>
 
 <div class="row g-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm rounded-4">
+    {% if meeting.live_event %}
+    <div class="col-12 mt-4">
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 bg-primary text-white">
+                    <div class="card-body p-4">
+                        <h6 class="text-white-50 small fw-bold text-uppercase">Total de Inscritos</h6>
+                        <div class="d-flex align-items-center">
+                            <h2 class="fw-bold mb-0 me-3">{{ live_stats.total }}</h2>
+                            <i class="bi bi-people fs-1 text-white-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 bg-success text-white">
+                    <div class="card-body p-4">
+                        <h6 class="text-white-50 small fw-bold text-uppercase">Online Agora</h6>
+                        <div class="d-flex align-items-center">
+                            <h2 class="fw-bold mb-0 me-3">{{ live_stats.online }}</h2>
+                            <i class="bi bi-broadcast fs-1 text-white-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 bg-secondary text-white">
+                    <div class="card-body p-4">
+                        <h6 class="text-white-50 small fw-bold text-uppercase">Já Saíram</h6>
+                        <div class="d-flex align-items-center">
+                            <h2 class="fw-bold mb-0 me-3">{{ live_stats.offline }}</h2>
+                            <i class="bi bi-box-arrow-right fs-1 text-white-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h6 class="fw-bold mb-1"><i class="bi bi-gear-fill me-2 text-primary"></i>Controle da Transmissão</h6>
+                        <p class="text-muted small mb-0">Gerencie o estado da sala para os participantes e valide presenças.</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <form method="POST" class="d-flex gap-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_live_status">
+                            {% if meeting.live_event.status == 'waiting' %}
+                                <button type="submit" name="status" value="live" class="btn btn-success rounded-pill px-4 shadow-sm fw-bold">
+                                    <i class="bi bi-play-fill me-1"></i>INICIAR LIVE (Público Entrar)
+                                </button>
+                            {% elif meeting.live_event.status == 'live' %}
+                                <button type="submit" name="status" value="finished" class="btn btn-danger rounded-pill px-4 shadow-sm fw-bold">
+                                    <i class="bi bi-stop-fill me-1"></i>ENCERRAR LIVE
+                                </button>
+                                <div class="ms-md-auto d-flex gap-2">
+                                    <a href="{% url 'company_live_dashboard' company.slug %}" target="_blank" class="btn btn-outline-light rounded-pill px-3 shadow-sm">
+                                        <i class="bi bi-grid-3x3-gap me-1"></i>Ver no Dashboard
+                                    </a>
+                                    <button type="button" class="btn btn-light rounded-pill px-4 shadow-sm fw-bold" onclick="confirmMasterAttendance()">
+                                        <i class="bi bi-shield-check me-1 text-success"></i>BOTÃO MASTER: Confirmar Presenças
+                                    </button>
+                                </div>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-4 py-2 border">Live Encerrada</span>
+                                <button type="submit" name="status" value="live" class="btn btn-outline-success btn-sm rounded-pill">Reabrir</button>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 border-start border-danger border-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-0">
+                <h6 class="fw-bold mb-0 text-danger"><i class="bi bi-youtube me-2"></i>Monitoramento em Tempo Real</h6>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#chatPreviewModal">
+                        <i class="bi bi-chat-dots me-1"></i>Ver Chat
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="window.location.reload()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Atualizar Stats
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-4 pt-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4 py-3 text-muted small fw-bold">PARTICIPANTE</th>
+                                <th class="py-3 text-muted small fw-bold">FILIAL</th>
+                                <th class="py-3 text-muted small fw-bold">ENTRADA</th>
+                                <th class="py-3 text-muted small fw-bold">DURAÇÃO</th>
+                                <th class="py-3 text-muted small fw-bold text-center">STATUS</th>
+                                <th class="py-3 text-center text-muted small fw-bold">VALIDAÇÃO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for la in meeting.live_event.attendances.all %}
+                            <tr>
+                                <td class="ps-4 fw-bold">{{ la.name }}</td>
+                                <td class="text-muted small">{{ la.branch.name }}</td>
+                                <td class="small">{{ la.timestamp|date:"H:i" }}</td>
+                                <td class="fw-bold text-primary">{{ la.duration_minutes }} min</td>
+                                <td class="text-center">
+                                    {% if la.is_online %}
+                                        <span class="badge bg-success rounded-pill px-3">
+                                            <i class="bi bi-record-fill me-1 pulse"></i>Online
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-muted border rounded-pill px-3">Desconectado</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if la.is_confirmed %}
+                                        <span class="text-success fw-bold small"><i class="bi bi-check-circle-fill me-1"></i>Confirmada</span>
+                                    {% else %}
+                                        <span class="text-muted small">Pendente</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted small">Nenhum acesso registrado na live até o momento.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-12 mt-4">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="fw-bold mb-0"><i class="bi bi-pen me-2 text-primary"></i>Assinaturas do Formulário (Lista Offline)</h6>
+            </div>
+            <div class="card-body p-4 pt-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
                         <thead class="bg-light">
@@ -70,11 +210,31 @@
     </div>
 </div>
 
+<!-- Modal Chat Preview -->
+<div class="modal fade" id="chatPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-chat-left-text me-2"></i>Histórico do Chat da Live</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" style="height: 400px; overflow-y: auto; background: #f8f9fa;" id="chat-content">
+                <div class="p-3 text-center text-muted small">Carregando mensagens...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Confirmação Exclusão Oculto -->
 <form method="POST" id="deleteAttendanceForm" style="display:none;">
     {% csrf_token %}
     <input type="hidden" name="action" value="delete_attendance">
     <input type="hidden" name="attendance_id" id="delAttendanceId">
+</form>
+
+<form method="POST" id="confirmAttendancesForm" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="confirm_attendances">
 </form>
 
 <script>
@@ -88,7 +248,52 @@
             }
         );
     }
+
+    function confirmMasterAttendance() {
+        uiConfirm(
+            'Botão Master - Confirmar Presenças',
+            'Isso marcará como CONFIRMADA a presença de todos os usuários que estão ONLINE neste exato momento. Deseja continuar?',
+            () => {
+                document.getElementById('confirmAttendancesForm').submit();
+            }
+        );
+    }
+
+    // Carregar chat no modal quando abrir
+    const chatModal = document.getElementById('chatPreviewModal');
+    chatModal.addEventListener('show.bs.modal', function () {
+        const chatContent = document.getElementById('chat-content');
+        fetch("{% url 'live_chat_api' meeting.live_event.id %}")
+            .then(res => res.json())
+            .then(data => {
+                if (data.messages && data.messages.length > 0) {
+                    chatContent.innerHTML = data.messages.map(m => `
+                        <div class="px-3 py-2 border-bottom ${m.is_admin ? 'bg-primary-subtle' : 'bg-white'}">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold small ${m.is_admin ? 'text-primary' : 'text-dark'}">${m.author_name} <span class="text-muted fw-normal">(${m.branch_name})</span></span>
+                                <span class="text-muted small" style="font-size: 0.7rem;">${m.time}</span>
+                            </div>
+                            <div class="small mt-1">${m.message}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    chatContent.innerHTML = '<div class="p-5 text-center text-muted">Ainda não há mensagens no chat desta live.</div>';
+                }
+            });
+    });
 </script>
+
+<style>
+    .pulse {
+        animation: pulse-animation 2s infinite;
+        display: inline-block;
+    }
+
+    @keyframes pulse-animation {
+        0% { transform: scale(0.95); opacity: 0.7; }
+        50% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(0.95); opacity: 0.7; }
+    }
 
 <style>
     @media print {

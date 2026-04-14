@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ event.title }} | Ao Vivo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: {{ company.primary_color|default:"#007bff" }};
+        }
+        body {
+            background-color: #0f0f0f;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .navbar {
+            background-color: #0f0f0f;
+            border-bottom: 1px solid #2a2a2a;
+            padding: 0.5rem 1.5rem;
+        }
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            height: calc(100vh - 56px);
+        }
+        @media (max-width: 992px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .chat-sidebar {
+                height: 500px;
+            }
+        }
+        
+        /* Player */
+        .video-player-container {
+            padding: 1.5rem;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+        .aspect-ratio-box {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            background: black;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .aspect-ratio-box iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        /* Detail Section */
+        .info-section {
+            margin-top: 1.5rem;
+        }
+        .interaction-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .like-btn {
+            background: rgba(255,255,255,0.1);
+            border: 0;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            transition: all 0.2s;
+        }
+        .like-btn:hover { background: rgba(255,255,255,0.2); }
+        .like-btn.liked { color: var(--primary-color); }
+
+        /* Description */
+        .description-box {
+            background-color: #2a2a2a;
+            border-radius: 0.8rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            color: #efefef;
+            white-space: pre-wrap;
+        }
+
+        /* Chat */
+        .chat-sidebar {
+            background-color: #0f0f0f;
+            border-left: 1px solid #2a2a2a;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            padding: 1rem;
+            border-bottom: 1px solid #2a2a2a;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            scrollbar-width: thin;
+        }
+        .chat-msg {
+            font-size: 0.9rem;
+        }
+        .chat-msg .author {
+            font-weight: 700;
+            margin-right: 0.5rem;
+            color: #aaa;
+        }
+        .chat-msg .branch {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        .chat-msg .message-content {
+            color: #eee;
+        }
+        .chat-msg.admin .author { color: var(--primary-color); }
+
+        .chat-input-area {
+            padding: 1rem;
+            border-top: 1px solid #2a2a2a;
+        }
+        .chat-input {
+            background: #2a2a2a;
+            border: 0;
+            color: white;
+            padding: 0.8rem 1rem;
+            border-radius: 0.5rem;
+            width: 100%;
+        }
+        .chat-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--primary-color);
+        }
+
+        .pulse-live {
+            width: 8px;
+            height: 8px;
+            background: #ff0000;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            box-shadow: 0 0 8px #ff0000;
+            animation: live-pulse-animation 1.5s infinite;
+        }
+        @keyframes live-pulse-animation {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="d-flex align-items-center">
+            {% if company.logo_url %}
+                <img src="{{ company.logo_url }}" alt="Logo" height="32" class="me-3">
+            {% endif %}
+            <span class="fw-bold d-none d-sm-inline">{{ company.name }}</span>
+        </div>
+        <div class="ms-auto small text-white-50">
+            Logado como: <strong>{{ user_name }}</strong> ({{ user_branch }})
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- PLAYER LADO ESQUERDO -->
+        <div class="video-player-container">
+            <div class="aspect-ratio-box">
+                <iframe src="https://www.youtube.com/embed/{{ youtube_id }}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&disablekb=1" 
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen></iframe>
+            </div>
+
+            <div class="info-section">
+                <h4 class="fw-bold mb-1">{{ event.title }}</h4>
+                <div class="interaction-bar">
+                    <div class="small d-flex align-items-center">
+                        {% if event.status == 'live' %}
+                            <span class="pulse-live"></span>
+                            <span class="text-danger fw-bold me-3">AO VIVO</span>
+                        {% else %}
+                            <span class="badge bg-secondary me-3">GRAVADO</span>
+                        {% endif %}
+                        <span class="text-white-50"><i class="bi bi-eye me-1"></i>Visto por último</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button id="like-btn" class="like-btn" onclick="sendLike()">
+                            <i class="bi bi-hand-thumbs-up-fill me-2"></i><span id="like-count">{{ event.likes_count }}</span>
+                        </button>
+                    </div>
+                </div>
+
+                {% if event.description %}
+                <div class="description-box">
+                    {{ event.description }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- CHAT LADO DIREITO -->
+        <div class="chat-sidebar">
+            <div class="chat-header">
+                Chat da Reunião
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <!-- Mensagens entram aqui -->
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" class="chat-input" placeholder="Diga algo..." onkeyup="if(event.key==='Enter') sendMessage()">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const eventId = "{{ event.id }}";
+        const userName = "{{ user_name }}";
+        const branchName = "{{ user_branch }}";
+        let lastMsgId = 0;
+
+        // HEARTBEAT
+        function sendHeartbeat() {
+            fetch("{% url 'live_heartbeat' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event_id: eventId, name: userName })
+            });
+        }
+        setInterval(sendHeartbeat, 30000); // A cada 30 segundos
+
+        // LIKE
+        function sendLike() {
+            fetch("{% url 'live_like_api' event.id %}", { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === 'ok') {
+                        document.getElementById('like-count').innerText = data.likes;
+                        document.getElementById('like-btn').classList.add('liked');
+                    }
+                });
+        }
+
+        // CHAT - RECEBER
+        function fetchMessages() {
+            fetch("{% url 'live_chat_api' event.id %}?last_id=" + lastMsgId)
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('chat-messages');
+                    data.messages.forEach(m => {
+                        const div = document.createElement('div');
+                        div.className = `chat-msg ${m.is_admin ? 'admin' : ''}`;
+                        div.innerHTML = `
+                            <div class="branch">${m.branch_name}</div>
+                            <div><span class="author">${m.author_name}</span><span class="message-content">${m.message}</span></div>
+                        `;
+                        container.appendChild(div);
+                        lastMsgId = Math.max(lastMsgId, m.id);
+                        container.scrollTop = container.scrollHeight;
+                    });
+                });
+        }
+        setInterval(fetchMessages, 3000);
+
+        // CHAT - ENVIAR
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if(!message) return;
+
+            fetch("{% url 'live_chat_api' event.id %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: message,
+                    author_name: userName,
+                    branch_name: branchName
+                })
+            });
+            input.value = '';
+        }
+
+        fetchMessages();
+        sendHeartbeat();
+    </script>
+    <div class="text-center mt-4 small opacity-50 pb-4">
+        Desenvolvido por <a href="https://luizgustavo.tech" target="_blank" class="text-white text-decoration-none fw-bold">luizgustavo.tech</a>
+    </div>
+</body>
+</html>

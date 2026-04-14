@@ -13,8 +13,13 @@
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link py-3 fw-bold border-0 border-bottom-3" id="urgency-tab" data-bs-toggle="tab" data-bs-target="#urgency" type="button">
-                    <i class="bi bi-exclamation-triangle me-2"></i>Níveis de Urgência
+                <button class="nav-link py-3 fw-bold border-0 border-bottom-3" id="youtube-tab" data-bs-toggle="tab" data-bs-target="#youtube" type="button">
+                    <i class="bi bi-youtube me-2"></i>Integração YouTube
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link py-3 fw-bold border-0 border-bottom-3" id="site-tab" data-bs-toggle="tab" data-bs-target="#site" type="button">
+                    <i class="bi bi-globe me-2"></i>Site & Contatos
                 </button>
             </li>
         </ul>
@@ -117,6 +122,70 @@
                     </table>
                 </div>
             </div>
+
+            <!-- ABA: SITE & CONTATOS -->
+            <div class="tab-pane fade" id="site" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-7">
+                        <h5 class="fw-bold mb-3">Configurações da Landing Page</h5>
+                        <p class="text-muted small mb-4">Gerencie as informações que aparecem no seu site público e os canais de comunicação com novos clientes.</p>
+
+                        <form method="POST" class="p-4 bg-light rounded-4 border">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_global">
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">WhatsApp do Capelão</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-whatsapp text-success"></i></span>
+                                        <input type="text" name="whatsapp_number" class="form-control border-start-0" value="{{ global_config.whatsapp_number }}" placeholder="Ex: 5543999999999">
+                                    </div>
+                                    <div class="form-text small">Use o formato 55 + DDD + Número (apenas números).</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">E-mail de Contato (Rodapé)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-envelope text-primary"></i></span>
+                                        <input type="email" name="contact_email" class="form-control border-start-0" value="{{ global_config.contact_email }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label small fw-bold">E-mail para Notificações Internas</label>
+                                    <input type="email" name="notify_email" class="form-control" value="{{ global_config.notify_email }}">
+                                    <div class="form-text small">Este e-mail receberá alertas sobre novos Leads (Contatos) do site.</div>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label small fw-bold">Endereço (Rodapé do Site)</label>
+                                    <textarea name="address" class="form-control" rows="2">{{ global_config.address }}</textarea>
+                                </div>
+                                <div class="col-md-12 mt-4 text-end">
+                                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
+                                        <i class="bi bi-save me-2"></i>Atualizar Site
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-5 border-start ps-md-4 mt-4 mt-md-0">
+                        <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
+                            <h6 class="fw-bold"><i class="bi bi-lightbulb-fill me-2"></i>Dica de Branding</h6>
+                            <p class="small mb-0">Essas informações são usadas no botão "Fale com um Especialista" e no rodapé do site institucional.</p>
+                        </div>
+                        <h6 class="fw-bold small text-muted text-uppercase mb-3">Links de Acesso</h6>
+                        <div class="list-group list-group-flush rounded-4 overflow-hidden border">
+                            <a href="{% url 'home' %}" target="_blank" class="list-group-item list-group-item-action py-3 d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-eye me-2"></i>Ver meu Site Público</span>
+                                <i class="bi bi-chevron-right small opacity-50"></i>
+                            </a>
+                            <a href="{% url 'portal_dashboard' %}" class="list-group-item list-group-item-action py-3 d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-chat-dots me-2"></i>Gerenciar Leads (Contatos)</span>
+                                <i class="bi bi-chevron-right small opacity-50"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -175,11 +244,15 @@
 
 {% block extra_js %}
 <script>
-    function confirmDelete(type, formId) {
-        uiConfirm(
-            `Remover ${type}`,
             `Tem certeza que deseja excluir este item global? Isso pode afetar a exibição nos formulários de todos os clientes.`,
             () => { document.getElementById(formId).submit(); }
+        );
+    }
+    function confirmDisconnect() {
+        uiConfirm(
+            "Desvincular YouTube",
+            "Isso desativará a criação automática de lives para todas as empresas. Tem certeza?",
+            () => { document.getElementById('disconnect-form').submit(); }
         );
     }
 </script>

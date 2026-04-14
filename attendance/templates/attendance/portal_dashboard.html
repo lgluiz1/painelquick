@@ -1,153 +1,233 @@
 {% extends 'attendance/portal_base.html' %}
 
-{% block title %}Dashboard | Portal do Capelão{% endblock %}
-{% block header_title %}Painel de Empresas{% endblock %}
+{% block title %}Dashboard Inteligente | Portal do Capelão{% endblock %}
+{% block header_title %}Central de Inteligência{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pulse-red {
+        animation: pulse-red-animation 2s infinite;
+        border: 2px solid #ff4d4d !important;
+    }
+    @keyframes pulse-red-animation {
+        0% { box-shadow: 0 0 0 0px rgba(255, 77, 77, 0.7); }
+        70% { box-shadow: 0 0 0 15px rgba(255, 77, 77, 0); }
+        100% { box-shadow: 0 0 0 0px rgba(255, 77, 77, 0); }
+    }
+    .ranking-card {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: white;
+    }
+    .activity-feed {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    .activity-item {
+        border-left: 3px solid var(--accent-color);
+        padding-left: 15px;
+        margin-bottom: 20px;
+        position: relative;
+    }
+    .activity-item::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        background: var(--accent-color);
+        border-radius: 50%;
+        position: absolute;
+        left: -8px;
+        top: 0;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="row g-4 mb-4">
+    <!-- Métricas Rápidas -->
     <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-0 bg-primary text-white rounded-4">
-            <h6 class="text-white-50 small mb-1">Total de Empresas</h6>
-            <h2 class="mb-0 fw-bold">{{ companies.count }}</h2>
+        <div class="card p-3 shadow-sm border-0 bg-dark text-white rounded-4">
+            <h6 class="text-white-50 small mb-1">Impacto Total</h6>
+            <h2 class="mb-0 fw-bold">{{ total_presences_global }} <small class="fs-6 fw-normal text-white-50">pessoas</small></h2>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-0 bg-white rounded-4 border">
-            <h6 class="text-muted small mb-1">Empresas Ativas</h6>
-            <h2 class="mb-0 fw-bold">{{ active_companies_count }}</h2>
+        <div class="card p-3 shadow-sm border-0 bg-white rounded-4 {% if recent_leads.count > 0 %}pulse-red{% endif %}">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted small mb-1">Novas Demandas</h6>
+                    <h2 class="mb-0 fw-bold {% if new_complaints_count > 0 %}text-danger{% endif %}">{{ new_complaints_count }}</h2>
+                </div>
+                <i class="bi bi-bell-fill fs-3 text-warning opacity-75"></i>
+            </div>
         </div>
     </div>
-</div>
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h5 class="fw-bold m-0"><i class="bi bi-building me-2 text-primary"></i>Empresas Atendidas</h5>
-    <button class="btn btn-primary d-flex align-items-center shadow-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#newCompanyModal">
-        <i class="bi bi-plus-lg me-2"></i>Nova Empresa
-    </button>
+    <div class="col-md-6">
+        <div class="card p-3 shadow-sm border-0 bg-white rounded-4 border h-100">
+            <div class="d-flex justify-content-between align-items-center h-100">
+                <div>
+                    <h6 class="text-muted small mb-1">Impacto (Presenças)</h6>
+                    <h2 class="mb-0 fw-bold">{{ total_presences_global }}</h2>
+                </div>
+                <div class="text-end">
+                    <a href="{% url 'portal_companies' %}" class="btn btn-dark btn-sm rounded-pill px-3">Ver Empresas</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-4">
-    {% for company in companies %}
-    <div class="col-md-4">
-        <div class="card card-stat shadow-sm border-0 h-100 p-4 rounded-4 position-relative {% if not company.is_active %}opacity-75 grayscale{% endif %}">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="bg-light p-2 rounded-3 border">
-                    {% if company.logo_url %}
-                    <img src="{{ company.logo_url }}" style="max-height: 40px; max-width: 100px; object-fit: contain;">
-                    {% else %}
-                    <i class="bi bi-building fs-3 text-secondary"></i>
-                    {% endif %}
+    <!-- Coluna Esquerda: Feed e Alertas -->
+    <div class="col-lg-8">
+        <!-- Alertas de Denúncias -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold m-0"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Denúncias Urgentes (Não Lidas)</h5>
+                <span class="badge bg-danger-subtle text-danger rounded-pill px-3">{{ unread_complaints.count }} pendentes</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Empresa</th>
+                                <th>Ticket</th>
+                                <th>Urgência</th>
+                                <th>Data</th>
+                                <th class="text-end pe-4">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for complaint in unread_complaints %}
+                            <tr class="bg-danger-subtle bg-opacity-10">
+                                <td class="ps-4"><strong>{{ complaint.company.name }}</strong></td>
+                                <td><span class="badge bg-white text-dark border">{{ complaint.ticket_id }}</span></td>
+                                <td>
+                                    <span class="badge rounded-pill" style="background-color: {{ complaint.urgency.color }}">
+                                        {{ complaint.urgency.name }}
+                                    </span>
+                                </td>
+                                <td class="small text-muted">{{ complaint.created_at|date:"d/m H:i" }}</td>
+                                <td class="text-end pe-4">
+                                    <a href="{% url 'portal_complaint_detail' complaint.company.slug complaint.pk %}" class="btn btn-sm btn-primary rounded-pill px-3">Ver Agora</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center py-4 text-muted">Nenhuma denúncia nova no momento. 🙌</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                {% if company.is_active %}
-                <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">Ativa</span>
-                {% else %}
-                <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill">Inativa</span>
-                {% endif %}
-            </div>
-            <h5 class="fw-bold mb-1">{{ company.name }}</h5>
-            <p class="text-muted small mb-4">Desde: {{ company.created_at|date:"M Y" }}</p>
-            
-            <div class="d-flex gap-2 mt-auto">
-                <a href="{% url 'portal_company_detail' company.slug %}" class="btn btn-outline-primary flex-grow-1 rounded-pill">Acessar Painel</a>
-                <button class="btn btn-light rounded-circle shadow-sm" 
-                        data-bs-toggle="modal" 
-                        data-bs-target="#settingsModal"
-                        data-bs-id="{{ company.id }}"
-                        data-bs-name="{{ company.name }}"
-                        data-bs-logo="{{ company.logo_url|default:'' }}"
-                        data-bs-color="{{ company.primary_color }}"
-                        data-bs-active="{{ company.is_active|yesno:'true,false' }}">
-                    <i class="bi bi-gear-fill"></i>
-                </button>
             </div>
         </div>
-    </div>
-    {% empty %}
-    <div class="col-12 text-center py-5">
-        <div class="bg-light p-5 rounded-4 border">
-            <i class="bi bi-building-dash display-1 text-muted opacity-25"></i>
-            <p class="text-muted mt-3">Nenhuma empresa cadastrada ainda.</p>
-        </div>
-    </div>
-    {% endfor %}
-</div>
 
-<!-- Modal Nova Empresa -->
-<div class="modal fade" id="newCompanyModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Cadastrar Novo Cliente</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <!-- Próximos Fechamentos de Relatórios -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="fw-bold m-0"><i class="bi bi-clock-history text-warning me-2"></i>Prazos Curtos (Avaliações)</h5>
             </div>
-            <div class="modal-body p-4">
-                <form method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="create_company">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Nome da Empresa</label>
-                        <input type="text" class="form-control rounded-3" name="name" required placeholder="Ex: Quick Delivery Logistics">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Slug (URL personalizada)</label>
-                        <input type="text" class="form-control rounded-3" name="slug" placeholder="ex: quickdelivery">
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 py-3 shadow-sm fw-bold mt-2 rounded-3">Criar Agora</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Configurações Rápidas -->
-<div class="modal fade" id="settingsModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold" id="modalTitle">Configurações</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form method="POST" id="settingsForm">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="update_company">
-                    <input type="hidden" name="company_id" id="comp_id">
-                    
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Nome da Empresa</label>
-                        <input type="text" name="name" id="comp_name" class="form-control rounded-3" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Branding (Logo & Cor)</label>
-                        <div class="input-group mb-2">
-                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-image text-muted"></i></span>
-                            <input type="url" name="logo_url" id="comp_logo" class="form-control border-start-0 ps-0" placeholder="URL da Logo (PNG/SVG)">
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for eval in approaching_evals %}
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-4 bg-light position-relative">
+                            <h6 class="fw-bold mb-1">{{ eval.title }}</h6>
+                            <p class="small text-muted mb-2">{{ eval.course.company.name }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-dark rounded-pill countdown-timer" data-time="{{ eval.end_time|date:'c' }}">
+                                    Calculando...
+                                </span>
+                                <a href="{% url 'portal_evaluation_detail' eval.course.company.slug eval.pk %}" class="btn btn-sm btn-outline-dark rounded-pill border-dashed">Relatório</a>
+                            </div>
                         </div>
-                        <input type="color" name="primary_color" id="comp_color" class="form-control form-control-color w-100 mb-1">
                     </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-4 text-muted">Sem avaliações com prazo definido.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
 
-                    <div class="form-check form-switch mb-4 p-3 bg-light rounded-3">
-                        <input class="form-check-input ms-0 me-2" type="checkbox" name="is_active" id="comp_active">
-                        <label class="form-check-label fw-bold small">Status da Empresa (Ativa/Inativa)</label>
-                        <div class="form-text mt-0 ms-4 small">Empresas inativas não podem receber novas presenças.</div>
-                    </div>
+        <!-- Contatos do Site (Leads) -->
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold m-0"><i class="bi bi-chat-left-dots-fill text-primary me-2"></i>Contatos Recentes do Site</h5>
+                <span class="badge bg-primary-subtle text-primary rounded-pill px-3">{{ recent_leads.count }} novos</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Interessado</th>
+                                <th>Empresa</th>
+                                <th>Telefone</th>
+                                <th class="text-end pe-4">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lead in recent_leads %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold">{{ lead.first_name }} {{ lead.last_name }}</div>
+                                    <div class="small text-muted">{{ lead.email }}</div>
+                                </td>
+                                <td>{{ lead.company }}</td>
+                                <td class="small">{{ lead.phone }}</td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
+                                            onclick="uiConfirm('Mensagem de {{ lead.first_name }}', '{{ lead.message|escapejs }}', () => {})">
+                                        Ler Mensagem
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-4 text-muted">Nenhum contato novo do site.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-grow-1 py-2 fw-bold rounded-3 shadow-sm">Salvar Alterações</button>
+    <!-- Coluna Direita: Ranking e Outros -->
+    <div class="col-lg-4">
+        <!-- Ranking de Engajamento -->
+        <div class="card border-0 shadow-sm rounded-4 ranking-card mb-4">
+            <div class="card-header bg-transparent border-0 py-3">
+                <h5 class="fw-bold m-0 text-white"><i class="bi bi-trophy-fill text-warning me-2"></i>Top 5 Engajamento (30d)</h5>
+            </div>
+            <div class="card-body">
+                {% for item in company_ranking %}
+                <div class="d-flex align-items-center mb-4">
+                    <div class="fs-4 fw-bold me-3 opacity-50">{{ forloop.counter }}º</div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold small">{{ item.name }}</span>
+                            <span class="text-white-50 small">{{ item.score }} pts</span>
+                        </div>
+                        <div class="progress" style="height: 6px; background: rgba(255,255,255,0.1);">
+                            <div class="progress-bar bg-primary" style="width: {% if forloop.first %}100%{% else %}70%{% endif %}"></div>
+                        </div>
                     </div>
-                </form>
-                
-                <hr class="my-4">
-                
-                <form method="POST" id="deleteCompanyForm">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="delete_company">
-                    <input type="hidden" name="company_id" id="comp_id_delete">
-                    <button type="button" class="btn btn-outline-danger w-100 py-2 border-0" onclick="confirmDeleteCompany()">
-                        <i class="bi bi-trash me-2"></i>Excluir Empresa Permanentemente
-                    </button>
-                </form>
+                </div>
+                {% empty %}
+                <p class="text-white-50 text-center py-3">Nenhum dado de engajamento recente.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Links Rápidos e Ações -->
+        <div class="card border-0 shadow-sm rounded-4 bg-primary text-white p-4">
+            <h5 class="fw-bold mb-3">Ações Rápidas</h5>
+            <div class="d-grid gap-2">
+                <a href="{% url 'portal_companies' %}" class="btn btn-light rounded-pill fw-bold text-primary">
+                    <i class="bi bi-building me-2"></i>Gerenciar Empresas
+                </a>
+                <a href="{% url 'export_global_report_excel' %}" class="btn btn-outline-light rounded-pill fw-bold">
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i>Exportar Dados Globais
+                </a>
             </div>
         </div>
     </div>
@@ -157,33 +237,37 @@
 
 {% block extra_js %}
 <script>
-    function confirmDeleteCompany() {
-        uiConfirm(
-            'Excluir Empresa', 
-            'ATENÇÃO: Deletar a empresa apagará TODOS os dados permanentemente. Esta ação não pode ser desfeita. Continuar?',
-            () => { document.getElementById('deleteCompanyForm').submit(); }
-        );
+    function updateCountdowns() {
+        const timers = document.querySelectorAll('.countdown-timer');
+        const now = new Date().getTime();
+
+        timers.forEach(timer => {
+            const endTime = new Date(timer.getAttribute('data-time')).getTime();
+            const distance = endTime - now;
+
+            if (distance < 0) {
+                timer.innerHTML = "Encerrada";
+                timer.classList.replace('bg-dark', 'bg-danger');
+            } else {
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((distance % (1000 * 60)) / 1000);
+
+                if (days > 0) {
+                    timer.innerHTML = `<i class="bi bi-clock me-1"></i>${days}d ${hours}h`;
+                } else if (hours > 0) {
+                    timer.innerHTML = `<i class="bi bi-clock me-1"></i>${hours}h ${mins}m`;
+                } else {
+                    timer.innerHTML = `<i class="bi bi-clock me-1"></i>${mins}m ${secs}s`;
+                    timer.classList.replace('bg-dark', 'bg-warning');
+                    timer.classList.add('text-dark');
+                }
+            }
+        });
     }
 
-    let settingsModal;
-    document.addEventListener('DOMContentLoaded', () => {
-        settingsModal = document.getElementById('settingsModal');
-        settingsModal.addEventListener('show.bs.modal', event => {
-            const button = event.relatedTarget;
-            const id = button.getAttribute('data-bs-id');
-            const name = button.getAttribute('data-bs-name');
-            const logo = button.getAttribute('data-bs-logo');
-            const color = button.getAttribute('data-bs-color');
-            const active = button.getAttribute('data-bs-active') === 'true';
-
-            document.getElementById('modalTitle').textContent = `Ajustes: ${name}`;
-            document.getElementById('comp_id').value = id;
-            document.getElementById('comp_id_delete').value = id;
-            document.getElementById('comp_name').value = name;
-            document.getElementById('comp_logo').value = logo;
-            document.getElementById('comp_color').value = color;
-            document.getElementById('comp_active').checked = active;
-        });
-    });
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns();
 </script>
 {% endblock %}

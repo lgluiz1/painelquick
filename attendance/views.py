@@ -4,9 +4,11 @@ import random
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.utils.text import slugify
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Count, Q
 from django.http import JsonResponse, HttpResponse
 import os
 import io
@@ -16,8 +18,15 @@ from xhtml2pdf import pisa
 from .models import (
     Company, Branch, Meeting, Attendance, Course, Evaluation, Question, 
     StudentResponse, StudentAnswer, Complaint, 
-    ComplaintCategory, UrgencyLevel, ComplaintUpdate
+    ComplaintCategory, UrgencyLevel, ComplaintUpdate, StaffProfile,
+    Lead, GlobalConfig
 )
+from functools import wraps
+from django.core.exceptions import PermissionDenied
+from livestream.youtube_service import YouTubeService
+from livestream.models import YouTubeConfig, LiveEvent
+from django.utils import timezone
+from datetime import datetime
 
 # --- UTILITÁRIOS ---
 
@@ -26,6 +35,27 @@ def get_company_by_token(request):
     if not token:
         return None
     return Company.objects.filter(api_token=token, is_active=True).first()
+
+# Decorador de Controle de Acesso por Cargo
+def staff_role_required(allowed_roles):
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required
+        def _wrapped_view(request, *args, **kwargs):
+            # Superusuários têm acesso total bypassando o perfil
+            if request.user.is_superuser:
+                return view_func(request, *args, **kwargs)
+            
+            try:
+                profile = request.user.staff_profile
+                if profile.is_active and profile.role in allowed_roles:
+                    return view_func(request, *args, **kwargs)
+            except StaffProfile.DoesNotExist:
+                pass
+            
+            raise PermissionDenied
+        return _wrapped_view
+    return decorator
 
 # --- API PÚBLICA (COLETA DE DADOS - MULTI-TENANT) ---
 
@@ -189,9 +219,57 @@ def portal_login(request):
         return render(request, 'attendance/portal_login.html', {'error': 'Acesso negado.'})
     return render(request, 'attendance/portal_login.html')
 
-@login_required
-def portal_dashboard(request):
+def portal_logout(request):
+    logout(request)
+    return redirect('portal_login')
+
+@staff_role_required(allowed_roles=['ADMIN'])
+def portal_users(request):
     if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'create_staff':
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+            role = request.POST.get('role')
+            
+            if User.objects.filter(username=username).exists():
+                from django.contrib import messages
+                messages.error(request, f"Usuário {username} já existe.")
+            else:
+                user = User.objects.create_user(username=username, password=password)
+                StaffProfile.objects.create(user=user, role=role)
+                from django.contrib import messages
+                messages.success(request, f"Usuário {username} criado com cargo {role}.")
+        
+        elif action == 'update_staff':
+            profile_id = request.POST.get('profile_id')
+            profile = get_object_or_404(StaffProfile, id=profile_id)
+            profile.role = request.POST.get('role')
+            profile.is_active = request.POST.get('is_active') == 'on'
+            profile.save()
+            from django.contrib import messages
+            messages.success(request, f"Perfil de {profile.user.username} atualizado.")
+            
+        elif action == 'delete_staff':
+            profile = get_object_or_404(StaffProfile, id=request.POST.get('profile_id'))
+            username = profile.user.username
+            profile.user.delete() # Deleta user e profile via cascade
+            from django.contrib import messages
+            messages.success(request, f"Usuário {username} removido da equipe.")
+            
+        return redirect('portal_users')
+
+    staff_members = StaffProfile.objects.all().select_related('user').order_by('-created_at')
+    return render(request, 'attendance/portal_users.html', {
+        'staff_members': staff_members,
+        'roles': StaffProfile.ROLE_CHOICES
+    })
+
+@staff_role_required(allowed_roles=['ADMIN', 'AUDITOR'])
+def portal_companies(request):
+    if request.method == 'POST':
+        # ... manter lógica de criação/edição/delete existente ...
         action = request.POST.get('action')
         if action == 'create_company':
             name = request.POST.get('name')
@@ -205,13 +283,103 @@ def portal_dashboard(request):
             c.save()
         elif action == 'delete_company':
             get_object_or_404(Company, id=request.POST.get('company_id')).delete()
-        return redirect('portal_dashboard')
-    return render(request, 'attendance/portal_dashboard.html', {
-        'companies': Company.objects.all().order_by('name'),
-        'active_companies_count': Company.objects.filter(is_active=True).count()
+        return redirect('portal_companies')
+
+    # Anotações para a tabela
+    companies = Company.objects.all().annotate(
+        total_meetings=Count('meetings', distinct=True),
+        total_complaints=Count('complaints', distinct=True),
+        pending_complaints=Count('complaints', filter=Q(complaints__status='novo'), distinct=True)
+    ).order_by('name')
+
+    return render(request, 'attendance/portal_companies.html', {
+        'companies': companies,
+        'active_companies_count': Company.objects.filter(is_active=True).count(),
     })
 
-@login_required
+def home(request):
+    # --- Landing Page Pública ---
+    config = GlobalConfig.get_solo()
+    
+    # 1. Logos de Empresas que confiam (Aleatórios)
+    # Buscamos empresas ativas que possuam logo
+    trusted_companies = list(Company.objects.filter(is_active=True, logo_url__isnull=False).exclude(logo_url=""))
+    random.shuffle(trusted_companies)
+    trusted_companies = trusted_companies[:8] # Mostramos até 8
+    
+    # 2. Processamento de Lead (Formulário de Contato)
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        company_name = request.POST.get('company')
+        message = request.POST.get('message')
+        
+        Lead.objects.create(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+            company=company_name,
+            message=message
+        )
+        # Aqui poderíamos disparar um e-mail de notificação para o config.notify_email
+        from django.contrib import messages
+        messages.success(request, "Sua mensagem foi enviada! O Capelão entrará em contato em breve.")
+        return redirect('home')
+
+    return render(request, 'attendance/home.html', {
+        'config': config,
+        'trusted_companies': trusted_companies,
+    })
+
+@staff_role_required(allowed_roles=['ADMIN', 'OUVIDOR', 'CONTEUDISTA', 'AUDITOR'])
+def portal_dashboard(request):
+    # --- Nova Dashboard Inovadora (Central de Alertas e Ranking) ---
+    from livestream.models import LiveAttendance, LiveChatMessage
+    from django.db.models import Sum, Max
+    
+    # 1. Ranking de Presença (Top 5 Empresas - Últimos 30 dias)
+    thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+    
+    ranking = Company.objects.all().annotate(
+        presencas_fisicas=Count('meetings__attendances', filter=Q(meetings__attendances__created_at__gte=thirty_days_ago), distinct=True),
+        presencas_digitais=Count('live_events__attendances', filter=Q(live_events__attendances__timestamp__gte=thirty_days_ago, live_events__attendances__is_confirmed=True), distinct=True),
+    )
+    
+    # Criar lista calculada para o Ranking
+    company_ranking = []
+    for c in ranking:
+        score = c.presencas_fisicas + c.presencas_digitais
+        company_ranking.append({'name': c.name, 'score': score})
+    
+    company_ranking = sorted(company_ranking, key=lambda x: x['score'], reverse=True)[:5]
+
+    # 2. Alertas de Denúncias Não Lidas
+    unread_complaints = Complaint.objects.filter(is_read=False, status='novo').select_related('company').order_by('-created_at')[:10]
+    
+    # 3. Novos Leads do Site (Contatos)
+    recent_leads = Lead.objects.filter(is_read=False).order_by('-created_at')[:5]
+
+    # 4. Avaliações com Prazo (Deadlines)
+    approaching_evals = Evaluation.objects.filter(is_active=True, end_time__isnull=False).select_related('course__company').order_by('end_time')[:5]
+    
+    # 5. Métricas Globais Rápidas
+    total_presences = Attendance.objects.count() + LiveAttendance.objects.count()
+
+    context = {
+        'company_ranking': company_ranking,
+        'unread_complaints': unread_complaints,
+        'recent_leads': recent_leads,
+        'approaching_evals': approaching_evals,
+        'total_presences_global': total_presences,
+        'new_complaints_count': unread_complaints.count() + recent_leads.count(),
+    }
+    
+    return render(request, 'attendance/portal_dashboard.html', context)
+
+@staff_role_required(allowed_roles=['ADMIN', 'OUVIDOR', 'CONTEUDISTA', 'AUDITOR'])
 def portal_company_detail(request, slug):
     company = get_object_or_404(Company, slug=slug)
     if request.method == 'POST':
@@ -231,26 +399,143 @@ def portal_company_detail(request, slug):
 
 # --- GESTÃO DETALHADA ---
 
-@login_required
+@staff_role_required(allowed_roles=['ADMIN', 'CONTEUDISTA'])
 def portal_meetings(request, slug):
     company = get_object_or_404(Company, slug=slug)
     if request.method == 'POST':
-        if request.POST.get('action') == 'delete_meeting':
+        action = request.POST.get('action')
+        if action == 'delete_meeting':
             get_object_or_404(Meeting, id=request.POST.get('meeting_id'), company=company).delete()
-        elif request.POST.get('action') == 'create_meeting':
-            Meeting.objects.create(company=company, title=request.POST.get('title'))
-        return redirect('portal_meetings', slug=slug)
-    return render(request, 'attendance/portal_meetings.html', {'company': company, 'meetings': company.meetings.all().order_by('-created_at')})
+        elif action == 'create_meeting':
+            title = request.POST.get('title')
+            start_time_str = request.POST.get('start_time')
+            description = request.POST.get('description', '')
+            is_youtube_live = request.POST.get('is_youtube_live') == 'on'
+            is_public = request.POST.get('is_public') == 'on'
+            
+            start_time = timezone.make_aware(datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M'))
+            
+            # Criar a reunião primeiro (como era antes)
+            meeting = Meeting.objects.create(
+                company=company,
+                title=title,
+                start_time=start_time,
+                description=description,
+                is_youtube_live=is_youtube_live   # <-- Faltava isso aqui!
+            )
+            
+            if is_youtube_live:
+                from livestream.youtube_service import YouTubeService
+                from django.contrib import messages
+                try:
+                    yt = YouTubeService()
+                    res = yt.create_live_broadcast(title, start_time, description)
+                    if res:
+                        from livestream.models import LiveEvent
+                        live_event = LiveEvent.objects.create(
+                            company=company,
+                            title=title,
+                            description=description,
+                            youtube_url=res['youtube_url'],
+                            start_time=start_time,
+                            is_public=is_public
+                        )
+                        meeting.live_event = live_event
+                        meeting.youtube_broadcast_id = res['broadcast_id']
+                        meeting.youtube_stream_key = res['stream_key']
+                        meeting.save()
+                        messages.success(request, f"Live criada com sucesso no YouTube! ID: {res['broadcast_id']}")
+                    else:
+                        messages.error(request, "O YouTube não retornou os dados da live. Verifique as configurações.")
+                except Exception as e:
+                    messages.error(request, f"Erro crítico ao vincular YouTube: {str(e)}")
+        
+        elif action == 'edit_meeting':
+            meeting_id = request.POST.get('meeting_id')
+            meeting = get_object_or_404(Meeting, id=meeting_id, company=company)
+            
+            title = request.POST.get('title')
+            start_time_str = request.POST.get('start_time')
+            description = request.POST.get('description', '')
+            is_public = request.POST.get('is_public') == 'on'
+            
+            start_time = timezone.make_aware(datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M'))
+            
+            # Update local Meeting
+            meeting.title = title
+            meeting.start_time = start_time
+            meeting.description = description
+            meeting.save()
+            
+            # Update associated LiveEvent
+            if meeting.live_event:
+                meeting.live_event.title = title
+                meeting.live_event.description = description
+                meeting.live_event.start_time = start_time
+                meeting.live_event.is_public = is_public
+                meeting.live_event.save()
+                
+                # Sync with YouTube if possible
+                if meeting.youtube_broadcast_id:
+                    from livestream.youtube_service import YouTubeService
+                    yt = YouTubeService()
+                    yt.update_live_broadcast(meeting.youtube_broadcast_id, title, start_time, description)
 
-@login_required
+        return redirect('portal_meetings', slug=slug)
+    return render(request, 'attendance/portal_meetings.html', {
+        'company': company, 
+        'meetings': company.meetings.all().order_by('-created_at'),
+        'youtube_config': YouTubeConfig.get_solo()
+    })
+
+@staff_role_required(allowed_roles=['ADMIN', 'CONTEUDISTA'])
 def portal_meeting_detail(request, slug, pk):
     meeting = get_object_or_404(Meeting, pk=pk, company__slug=slug)
-    if request.method == 'POST' and request.POST.get('action') == 'delete_attendance':
-        get_object_or_404(Attendance, id=request.POST.get('attendance_id'), meeting=meeting).delete()
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'delete_attendance':
+            get_object_or_404(Attendance, id=request.POST.get('attendance_id'), meeting=meeting).delete()
+        elif action == 'update_live_status' and meeting.live_event:
+            new_status = request.POST.get('status')
+            if new_status in ['waiting', 'live', 'finished']:
+                meeting.live_event.status = new_status
+                meeting.live_event.save()
+        elif action == 'confirm_attendances' and meeting.live_event:
+            # Botão Master/Xerife: Confirma presença de quem está ONLINE agora
+            attendances = meeting.live_event.attendances.all()
+            count = 0
+            for la in attendances:
+                if la.is_online():
+                    la.is_confirmed = True
+                    la.save()
+                    count += 1
+            # Poderíamos adicionar uma mensagem de sucesso aqui via messages framework
         return redirect('portal_meeting_detail', slug=slug, pk=pk)
-    return render(request, 'attendance/portal_meeting_detail.html', {'company': meeting.company, 'meeting': meeting, 'attendances': meeting.attendances.all().order_by('-created_at')})
+    
+    # Calcular estatísticas da live se existir
+    live_stats = {
+        'total': 0,
+        'online': 0,
+        'offline': 0
+    }
+    if meeting.live_event:
+        attendances = meeting.live_event.attendances.all()
+        live_stats['total'] = attendances.count()
+        for la in attendances:
+            if la.is_online():
+                live_stats['online'] += 1
+            else:
+                live_stats['offline'] += 1
+                
+    context = {
+        'company': meeting.company, 
+        'meeting': meeting, 
+        'attendances': meeting.attendances.all().order_by('-created_at'),
+        'live_stats': live_stats
+    }
+    return render(request, 'attendance/portal_meeting_detail.html', context)
 
-@login_required
+@staff_role_required(allowed_roles=['ADMIN', 'CONTEUDISTA'])
 def portal_courses(request, slug):
     company = get_object_or_404(Company, slug=slug)
     if request.method == 'POST':
@@ -262,7 +547,7 @@ def portal_courses(request, slug):
         return redirect('portal_courses', slug=slug)
     return render(request, 'attendance/portal_courses.html', {'company': company, 'courses': company.courses.all().order_by('-created_at')})
 
-@login_required
+@staff_role_required(allowed_roles=['ADMIN', 'CONTEUDISTA'])
 def portal_course_detail(request, slug, pk):
     course = get_object_or_404(Course, pk=pk, company__slug=slug)
     if request.method == 'POST':
@@ -273,7 +558,7 @@ def portal_course_detail(request, slug, pk):
         return redirect('portal_course_detail', slug=slug, pk=pk)
     return render(request, 'attendance/portal_course_detail.html', {'company': course.company, 'course': course, 'evaluations': course.evaluations.all().order_by('-created_at')})
 
-@login_required
+@staff_role_required(allowed_roles=['ADMIN', 'OUVIDOR', 'AUDITOR'])
 def portal_complaints(request, slug):
     company = get_object_or_404(Company, slug=slug)
     if request.method == 'POST' and request.POST.get('action') == 'delete_complaint':
@@ -281,9 +566,15 @@ def portal_complaints(request, slug):
         return redirect('portal_complaints', slug=slug)
     return render(request, 'attendance/portal_complaints.html', {'company': company, 'complaints': company.complaints.all().order_by('-created_at')})
 
-@login_required
+@staff_role_required(allowed_roles=['ADMIN', 'OUVIDOR', 'AUDITOR'])
 def portal_complaint_detail(request, slug, pk):
     complaint = get_object_or_404(Complaint, pk=pk, company__slug=slug)
+    
+    # Marcar como lida ao visualizar
+    if not complaint.is_read:
+        complaint.is_read = True
+        complaint.save()
+
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'add_update':
@@ -365,7 +656,7 @@ def hosted_form(request, company_slug, feature):
         
     return render(request, f'attendance/public_{feature}.html', context)
 
-@login_required
+@staff_role_required(allowed_roles=['ADMIN', 'CONTEUDISTA', 'AUDITOR'])
 def portal_evaluation_detail(request, slug, pk):
     evaluation = get_object_or_404(Evaluation, pk=pk, course__company__slug=slug)
     
@@ -389,7 +680,7 @@ def portal_evaluation_detail(request, slug, pk):
         'responses': evaluation.student_responses.all().order_by('-created_at')
     })
 
-@login_required
+@staff_role_required(allowed_roles=['ADMIN', 'AUDITOR'])
 def export_evaluation_excel(request, slug, pk):
     evaluation = get_object_or_404(Evaluation, pk=pk, course__company__slug=slug)
     responses = evaluation.student_responses.all().prefetch_related('answers__question')
@@ -441,7 +732,7 @@ def export_evaluation_pdf(request, slug, pk):
         return response
     return HttpResponse("Erro ao gerar PDF", status=500)
 
-@login_required
+@staff_role_required(allowed_roles=['ADMIN', 'AUDITOR'])
 def export_meeting_excel(request, slug, pk):
     meeting = get_object_or_404(Meeting, pk=pk, company__slug=slug)
     attendances = meeting.attendances.all().order_by('-created_at')
@@ -482,12 +773,35 @@ def export_meeting_pdf(request, slug, pk):
         return response
     return HttpResponse("Erro ao gerar PDF", status=500)
 
-@login_required
+@staff_role_required(allowed_roles=['ADMIN'])
 def portal_saas_settings(request):
-    
+    from livestream.models import YouTubeConfig
+    from django.contrib import messages
+    config = YouTubeConfig.get_solo()
+    global_config = GlobalConfig.get_solo()
+
     if request.method == 'POST':
         action = request.POST.get('action')
-        if action == 'add_category':
+        
+        if action == 'update_youtube':
+            try:
+                creds_str = request.POST.get('credentials')
+                config.credentials = json.loads(creds_str)
+                config.is_active = request.POST.get('is_active') == 'on'
+                config.save()
+                messages.success(request, "Configuração do YouTube atualizada!")
+            except Exception as e:
+                messages.error(request, f"Erro ao salvar JSON: {str(e)}")
+        
+        elif action == 'update_global':
+            global_config.whatsapp_number = request.POST.get('whatsapp_number')
+            global_config.contact_email = request.POST.get('contact_email')
+            global_config.notify_email = request.POST.get('notify_email')
+            global_config.address = request.POST.get('address')
+            global_config.save()
+            messages.success(request, "Configurações Globais atualizadas!")
+            
+        elif action == 'add_category':
             ComplaintCategory.objects.create(name=request.POST.get('name'), company=None)
         elif action == 'delete_category':
             ComplaintCategory.objects.filter(id=request.POST.get('category_id'), company__isnull=True).delete()
@@ -499,14 +813,67 @@ def portal_saas_settings(request):
             )
         elif action == 'delete_urgency':
             UrgencyLevel.objects.filter(id=request.POST.get('urgency_id'), company__isnull=True).delete()
+        elif action == 'disconnect_youtube':
+            config = YouTubeConfig.get_solo()
+            config.credentials = {}
+            config.channel_id = None
+            config.channel_title = None
+            config.channel_thumbnail = None
+            config.save()
         return redirect('portal_saas_settings')
 
     context = {
         'categories': ComplaintCategory.objects.filter(company__isnull=True).order_by('name'),
         'urgencies': UrgencyLevel.objects.filter(company__isnull=True),
+        'youtube_config': YouTubeConfig.get_solo(),
     }
     return render(request, 'attendance/portal_saas_settings.html', context)
 
 def portal_logout(request):
     logout(request)
     return redirect('portal_login')
+
+@staff_role_required(allowed_roles=['ADMIN', 'AUDITOR'])
+def export_global_report_excel(request):
+    companies = Company.objects.all().annotate(
+        total_meetings=Count('meetings', distinct=True),
+        total_complaints=Count('complaints', distinct=True),
+        pending_complaints=Count('complaints', filter=Q(complaints__status='novo'), distinct=True)
+    ).order_by('name')
+    
+    wb = Workbook()
+    
+    # Planilha 1: Dashboard Geral
+    ws_dash = wb.active
+    ws_dash.title = "Dashboard Geral"
+    ws_dash.append(['RELATÓRIO CONSOLIDADO - PORTAL DO CAPELÃO'])
+    ws_dash.append(['Data de Geração:', timezone.now().strftime('%d/%m/%Y %H:%M')])
+    ws_dash.append([])
+    ws_dash.append(['Empresa', 'Reuniões Totais', 'Total de Denúncias', 'Denúncias Pendentes'])
+    
+    for c in companies:
+        ws_dash.append([c.name, c.total_meetings, c.total_complaints, c.pending_complaints])
+        
+    # Colunas auto-ajustáveis básicas
+    for col in range(1, 5):
+        ws_dash.column_dimensions[chr(64+col)].width = 20
+    
+    # Planilha 2: Todas as Denúncias Pendentes
+    ws_comp = wb.create_sheet(title="Denúncias Pendentes")
+    ws_comp.append(['Empresa', 'Ticket', 'Filial', 'Categoria', 'Urgência', 'Data'])
+    
+    pending_list = Complaint.objects.filter(status='novo').select_related('company', 'category', 'urgency').order_by('-created_at')
+    for comp in pending_list:
+        ws_comp.append([
+            comp.company.name if comp.company else "Geral",
+            comp.ticket_id,
+            comp.branch,
+            comp.category.name if comp.category else "Outra",
+            comp.urgency.name if comp.urgency else "Normal",
+            comp.created_at.strftime('%d/%m/%Y %H:%M')
+        ])
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=relatorio_global_capelao.xlsx'
+    wb.save(response)
+    return response

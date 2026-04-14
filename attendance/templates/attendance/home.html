@@ -1,0 +1,319 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capelão | Bem-estar que Transforma Empresas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --dark: #0f172a;
+            --accent: #10b981;
+            --bg-light: #f8fafc;
+        }
+        body { font-family: 'Outfit', sans-serif; background-color: white; color: var(--dark); overflow-x: hidden; }
+
+        /* Navbar */
+        .navbar { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+        .nav-link { font-weight: 500; color: var(--dark) !important; margin: 0 10px; }
+        .btn-cta-nav { background: var(--dark); color: white !important; border-radius: 50px; padding: 8px 25px; }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.6)), url("{% static 'attendance/img/hero_bg.png' %}");
+            background-size: cover;
+            background-position: center;
+            height: 90vh;
+            display: flex;
+            align-items: center;
+            color: white;
+            position: relative;
+        }
+        .hero-content { max-width: 800px; }
+        .hero-badge { background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); padding: 5px 15px; border-radius: 50px; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+        .hero-title { font-size: 4rem; font-weight: 700; line-height: 1.1; margin-bottom: 25px; }
+        .hero-btn { background: white; color: var(--dark); border-radius: 50px; padding: 15px 40px; font-weight: 700; text-decoration: none; transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .hero-btn:hover { background: var(--accent); color: white; transform: translateY(-3px); }
+
+        /* Trusted Companies */
+        .trusted-section { padding: 50px 0; background: var(--bg-light); }
+        .logo-grid { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 40px; }
+        .trusted-logo { max-height: 60px; max-width: 150px; opacity: 0.6; filter: grayscale(100%); transition: 0.3s; }
+        .trusted-logo:hover { opacity: 1; filter: grayscale(0%); }
+
+        /* Services Grid */
+        .services-section { padding: 100px 0; }
+        .service-card { 
+            border: none; 
+            border-bottom: 2px solid transparent; 
+            border-radius: 0; 
+            padding: 30px; 
+            transition: 0.3s; 
+            height: 100%;
+            background: white;
+        }
+        .service-card:hover { border-bottom: 2px solid var(--accent); background: var(--bg-light); transform: translateY(-5px); }
+        .service-num { color: var(--accent); font-weight: 700; font-size: 1.2rem; margin-bottom: 15px; display: block; }
+        .service-title { font-weight: 700; margin-bottom: 15px; font-size: 1.4rem; }
+        .service-text { font-size: 0.95rem; color: #64748b; line-height: 1.6; }
+
+        /* Contact Form */
+        .contact-section { padding: 100px 0; background-color: var(--bg-light); }
+        .form-card { border: none; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); }
+        .form-control { border-radius: 10px; padding: 12px; border: 1px solid #e2e8f0; }
+
+        /* Whatsapp Float */
+        .btn-whatsapp-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #25d366;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 10px 30px rgba(37, 211, 102, 0.4);
+            z-index: 1000;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .btn-whatsapp-float:hover { transform: scale(1.1); color: white; }
+
+        footer { background: var(--bg-light); padding: 80px 0 30px; border-top: 1px solid #e2e8f0; }
+        .footer-logo { max-height: 50px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+            <span class="fs-3 fw-light text-dark">Gilberto</span>
+            <span class="fs-3 fw-bold text-primary ms-1">Capelão</span>
+        </a>
+        <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navContent">
+            <ul class="navbar-nav mx-auto">
+                <li class="nav-item"><a class="nav-link" href="#home">Inicial</a></li>
+                <li class="nav-item"><a class="nav-link" href="#sobre">Sobre</a></li>
+                <li class="nav-item"><a class="nav-link" href="#servicos">O que abordamos</a></li>
+                <li class="nav-item"><a class="nav-link" href="#contato">Dúvidas</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'portal_login' %}">Portal</a></li>
+            </ul>
+            <a href="#contato" class="btn btn-cta-nav">CONTATO</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero-section" id="home">
+    <div class="container">
+        <div class="hero-content">
+            <span class="hero-badge">ESSÊNCIA CAPELANIA EMPRESARIAL</span>
+            <h1 class="hero-title">Bem-estar que <br>Transforma Empresas</h1>
+            <p class="fs-5 mb-5 opacity-75">Capelania Empresarial Integrada que Humaniza sua Gestão, Cuida de seus Colaboradores e Garante Conformidade com a Norma Regulamentadora NR-01.</p>
+            <a href="https://wa.me/{{ config.whatsapp_number }}" target="_blank" class="hero-btn">CONVERSE COM UM ESPECIALISTA</a>
+        </div>
+    </div>
+</section>
+
+<!-- Trusted Companies Section -->
+<section class="trusted-section">
+    <div class="container">
+        <p class="text-center text-muted small fw-bold mb-4">EMPRESAS QUE CONFIAM EM NOSSA CAPELANIA EMPRESARIAL</p>
+        <div class="logo-grid">
+            {% for company in trusted_companies %}
+            <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="trusted-logo" title="{{ company.name }}">
+            {% endfor %}
+            {% if not trusted_companies %}
+            <p class="text-muted small">Nossas parcerias crescem a cada dia.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Services Grid -->
+<section class="services-section" id="servicos">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-5 fs-1">O Que Abordamos</h2>
+        <div class="row g-0">
+            <!-- Card 1 -->
+            <div class="col-md-3">
+                <div class="service-card border-end border-bottom">
+                    <span class="service-num">01.</span>
+                    <h4 class="service-title">Prevenção de Assédio</h4>
+                    <p class="service-text">Programa completo de prevenção, identificação e combate ao assédio moral e sexual.</p>
+                </div>
+            </div>
+            <!-- Card 2 -->
+            <div class="col-md-3">
+                <div class="service-card border-end border-bottom">
+                    <span class="service-num">02.</span>
+                    <h4 class="service-title">Saúde Mental & Bem-estar</h4>
+                    <p class="service-text">Suporte psicológico contínuo e acolhimento emocional que fortalecem a resiliência.</p>
+                </div>
+            </div>
+            <!-- Card 3 -->
+            <div class="col-md-3">
+                <div class="service-card border-end border-bottom">
+                    <span class="service-num">03.</span>
+                    <h4 class="service-title">Gestão de Crises</h4>
+                    <p class="service-text">Protocolo estruturado para responder rapidamente a situações críticas e sensíveis.</p>
+                </div>
+            </div>
+            <!-- Card 4 -->
+            <div class="col-md-3">
+                <div class="service-card border-bottom">
+                    <span class="service-num">04.</span>
+                    <h4 class="service-title">Capelania Espiritual</h4>
+                    <p class="service-text">Atendimento espiritual inclusivo e acolhedor, respeitando diversas crenças.</p>
+                </div>
+            </div>
+            <!-- Card 5 -->
+            <div class="col-md-3">
+                <div class="service-card border-end">
+                    <span class="service-num">05.</span>
+                    <h4 class="service-title">Consultoria para Lideranças</h4>
+                    <p class="service-text">Orientação estratégica para CEOs e gestores sobre humanização e ética corporativa.</p>
+                </div>
+            </div>
+            <!-- Card 6 -->
+            <div class="col-md-3">
+                <div class="service-card border-end">
+                    <span class="service-num">06.</span>
+                    <h4 class="service-title">Conformidade NR-01</h4>
+                    <p class="service-text">Documentação completa e auditoria de conformidade com as normas vigentes.</p>
+                </div>
+            </div>
+            <!-- Card 7 -->
+            <div class="col-md-3">
+                <div class="service-card border-end">
+                    <span class="service-num">07.</span>
+                    <h4 class="service-title">Treinamento Corporativo</h4>
+                    <p class="service-text">Capacitação contínua de lideranças e equipes sobre respeito e diversidade.</p>
+                </div>
+            </div>
+            <!-- Card 8 -->
+            <div class="col-md-3">
+                <div class="service-card">
+                    <span class="service-num">08.</span>
+                    <h4 class="service-title">Avaliação de Clima</h4>
+                    <p class="service-text">Diagnóstico detalhado da saúde cultural corporativa e pontos de melhoria.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Form -->
+<section class="contact-section" id="contato">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-5 mb-5 mb-lg-0">
+                <p class="text-primary small fw-bold mb-3">POR QUE NOS CONTATAR?</p>
+                <h2 class="fw-bold fs-1 mb-4">Sua jornada para uma empresa mais humanizada começa aqui.</h2>
+                <p class="text-muted fs-5">Fale conosco sem compromisso. Respondemos em até 24 horas para entender sua necessidade.</p>
+            </div>
+            <div class="col-lg-7">
+                <div class="card form-card p-5 bg-white">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="small fw-bold mb-2">Nome*</label>
+                                <input type="text" name="first_name" class="form-control" placeholder="Seu nome" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small fw-bold mb-2">Sobrenome*</label>
+                                <input type="text" name="last_name" class="form-control" placeholder="Seu sobrenome" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="small fw-bold mb-2">E-mail Corporativo*</label>
+                                <input type="email" name="email" class="form-control" placeholder="email@empresa.com" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small fw-bold mb-2">Empresa*</label>
+                                <input type="text" name="company" class="form-control" placeholder="Nome da empresa" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small fw-bold mb-2">Telefone*</label>
+                                <input type="text" name="phone" class="form-control" placeholder="(00) 00000-0000" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="small fw-bold mb-2">Fale sobre sua necessidade*</label>
+                                <textarea name="message" class="form-control" rows="4" placeholder="Como podemos ajudar sua equipe?" required></textarea>
+                            </div>
+                            <div class="col-md-12 mt-4">
+                                <button type="submit" class="hero-btn border-0 w-100 py-3">ENVIAR AGORA</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Whatsapp Float -->
+<a href="https://wa.me/{{ config.whatsapp_number }}" target="_blank" class="btn-whatsapp-float">
+    <i class="bi bi-whatsapp"></i>
+</a>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="d-flex align-items-center mb-3">
+                    <span class="fs-4 fw-light text-dark">Gilberto</span>
+                    <span class="fs-4 fw-bold text-primary ms-1">Capelão</span>
+                </div>
+                <p class="small text-muted mb-4 pe-md-5">Transformando culturas corporativas através da humanização, bem-estar e conformidade.</p>
+                <div class="d-flex gap-3 fs-5 opacity-50">
+                    <i class="bi bi-facebook"></i>
+                    <i class="bi bi-instagram"></i>
+                    <i class="bi bi-linkedin"></i>
+                </div>
+            </div>
+            <div class="col-md-4 ps-md-5 text-center text-md-start">
+                <h6 class="fw-bold mb-4">Saiba Mais</h6>
+                <ul class="list-unstyled small d-grid gap-2 text-muted">
+                    <li>Quem Somos Nós?</li>
+                    <li>Nossos Pacotes de Solução</li>
+                    <li>Dúvidas Frequentes</li>
+                    <li>Política de Privacidade</li>
+                </ul>
+            </div>
+            <div class="col-md-4 text-center text-md-start">
+                <h6 class="fw-bold mb-4">Contato</h6>
+                <p class="small text-muted mb-2"><i class="bi bi-geo-alt me-2"></i>{{ config.address }}</p>
+                <p class="small text-muted mb-2"><i class="bi bi-telephone me-2"></i>+55 {{ config.whatsapp_number }}</p>
+                <p class="small text-muted"><i class="bi bi-envelope me-2"></i>{{ config.contact_email }}</p>
+            </div>
+        </div>
+        <hr class="my-5 opacity-10">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center small text-muted">
+            <div class="mb-2 mb-md-0">
+                © 2026 Guilberto Capelão. Todos os direitos reservados.
+            </div>
+            <div>
+                Desenvolvido por <a href="https://luizgustavo.tech" target="_blank" class="text-primary text-decoration-none fw-bold">luizgustavo.tech</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

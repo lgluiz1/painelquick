@@ -1,5 +1,26 @@
 from django.db import models
+from django.contrib.auth.models import User
 import secrets
+
+class StaffProfile(models.Model):
+    ROLE_CHOICES = [
+        ('ADMIN', 'Administrador Master'),
+        ('OUVIDOR', 'Analista de Ouvidoria'),
+        ('CONTEUDISTA', 'Gestor de Conteúdo'),
+        ('AUDITOR', 'Auditor de Relatórios'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_profile')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='OUVIDOR')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_role_display()}"
+
+    class Meta:
+        verbose_name = "Perfil de Equipe"
+        verbose_name_plural = "Perfis de Equipe"
 
 class Company(models.Model):
     name = models.CharField(max_length=255, verbose_name="Nome da Empresa")
@@ -40,6 +61,15 @@ class Branch(models.Model):
 class Meeting(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='meetings', null=True)
     title = models.CharField(max_length=255)
+    start_time = models.DateTimeField(null=True, blank=True, verbose_name="Horário da Reunião")
+    is_youtube_live = models.BooleanField(default=False, verbose_name="Agendar no YouTube?")
+    youtube_broadcast_id = models.CharField(max_length=100, null=True, blank=True)
+    youtube_stream_key = models.CharField(max_length=100, null=True, blank=True)
+    description = models.TextField(null=True, blank=True, verbose_name="Descrição (Suporta Emojis)")
+    
+    # Vincular ao evento de live para monitoramento de heartbeat
+    live_event = models.OneToOneField('livestream.LiveEvent', on_delete=models.SET_NULL, null=True, blank=True, related_name='reunion_meeting')
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -83,6 +113,7 @@ class Evaluation(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='evaluations')
     title = models.CharField(max_length=255, verbose_name="Título da Avaliação/Módulo")
     is_active = models.BooleanField(default=False, verbose_name="Ativo?")
+    end_time = models.DateTimeField(null=True, blank=True, verbose_name="Data/Hora de Fechamento")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -177,6 +208,7 @@ class Complaint(models.Model):
     
     description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='novo')
+    is_read = models.BooleanField(default=False, verbose_name="Lida?")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -200,3 +232,41 @@ class ComplaintUpdate(models.Model):
     class Meta:
         verbose_name = "Atualização de Denúncia"
         verbose_name_plural = "Atualizações de Denúncias"
+class Lead(models.Model):
+    first_name = models.CharField(max_length=100, verbose_name="Nome")
+    last_name = models.CharField(max_length=100, verbose_name="Sobrenome")
+    email = models.EmailField(verbose_name="E-mail")
+    phone = models.CharField(max_length=20, verbose_name="Telefone")
+    company = models.CharField(max_length=255, verbose_name="Empresa")
+    message = models.TextField(verbose_name="Mensagem")
+    is_read = models.BooleanField(default=False, verbose_name="Lida?")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} - {self.company}"
+
+    class Meta:
+        verbose_name = "Lead / Contato Site"
+        verbose_name_plural = "Leads / Contatos Site"
+
+class GlobalConfig(models.Model):
+    whatsapp_number = models.CharField(max_length=20, default="5543996404350", verbose_name="WhatsApp do Capelão")
+    contact_email = models.EmailField(default="contato@exemplo.com", verbose_name="E-mail de Contato Exibido")
+    notify_email = models.EmailField(default="admin@exemplo.com", verbose_name="E-mail que recebe notificações")
+    
+    # Campo para endereço ou outra info que queira dinamizar
+    address = models.TextField(default="Rua Gualuvira, 265, Londrina - PR", verbose_name="Endereço no Rodapé")
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "Configurações Globais do Portal"
+
+    class Meta:
+        verbose_name = "Configuração Global"
+        verbose_name_plural = "Configurações Globais"
+
+    @classmethod
+    def get_solo(cls):
+        obj, created = cls.objects.get_or_create(id=1)
+        return obj

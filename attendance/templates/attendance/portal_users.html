@@ -1,0 +1,196 @@
+{% extends 'attendance/portal_base.html' %}
+
+{% block title %}Equipe | Portal do Capelão{% endblock %}
+{% block header_title %}Gestão da Equipe{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 bg-primary text-white rounded-4">
+            <h6 class="text-white-50 small mb-1">Total da Equipe</h6>
+            <h2 class="mb-0 fw-bold">{{ staff_members.count }}</h2>
+        </div>
+    </div>
+    <div class="col-md-9 text-md-end d-flex align-items-end justify-content-md-end">
+        <button class="btn btn-primary d-flex align-items-center shadow-sm rounded-pill px-4 py-2" data-bs-toggle="modal" data-bs-target="#newStaffModal">
+            <i class="bi bi-person-plus-fill me-2"></i>Adicionar Colaborador
+        </button>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3">Nome de Usuário</th>
+                        <th class="py-3">Cargo / Permissão</th>
+                        <th class="py-3">Status</th>
+                        <th class="py-3">Membro Desde</th>
+                        <th class="py-3 pe-4 text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for profile in staff_members %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary-subtle text-primary rounded-circle p-2 me-3">
+                                    <i class="bi bi-person fs-5"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ profile.user.username }}</div>
+                                    <div class="text-muted small">{{ profile.user.email|default:"Sem e-mail cadastrado" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if profile.role == 'ADMIN' %}
+                                <span class="badge bg-dark rounded-pill px-3">Administrador Master</span>
+                            {% elif profile.role == 'OUVIDOR' %}
+                                <span class="badge bg-info-subtle text-info rounded-pill px-3">Analista de Ouvidoria</span>
+                            {% elif profile.role == 'CONTEUDISTA' %}
+                                <span class="badge bg-warning-subtle text-warning rounded-pill px-3">Gestor de Conteúdo</span>
+                            {% elif profile.role == 'AUDITOR' %}
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3">Auditor</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if profile.is_active %}
+                                <span class="text-success small"><i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i> Ativo</span>
+                            {% else %}
+                                <span class="text-danger small"><i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i> Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ profile.created_at|date:"d/m/Y" }}</td>
+                        <td class="pe-4 text-end">
+                            <button class="btn btn-sm btn-light rounded-circle shadow-sm me-1" 
+                                    onclick="editStaff('{{ profile.id }}', '{{ profile.user.username }}', '{{ profile.role }}', {{ profile.is_active|yesno:'true,false' }})">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            {% if profile.user != request.user %}
+                            <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" onclick="deleteStaff('{{ profile.id }}', '{{ profile.user.username }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">Ainda não há outros membros na sua equipe.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Colaborador -->
+<div class="modal fade" id="newStaffModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Novo Membro da Equipe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_staff">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Username (Login)</label>
+                        <input type="text" class="form-control rounded-3" name="username" required placeholder="Ex: ana.analista">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Senha Inicial</label>
+                        <input type="password" class="form-control rounded-3" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Cargo / Nível de Acesso</label>
+                        <select class="form-select rounded-3" name="role" required>
+                            {% for code, label in roles %}
+                                <option value="{{ code }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small">Define o que o usuário poderá ver no portal.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-3 shadow-sm fw-bold mt-2 rounded-3">Criar Acesso</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Colaborador -->
+<div class="modal fade" id="editStaffModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="editTitle">Editar Permissões</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_staff">
+                    <input type="hidden" name="profile_id" id="edit_profile_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Mudar Cargo</label>
+                        <select class="form-select rounded-3" name="role" id="edit_role">
+                            {% for code, label in roles %}
+                                <option value="{{ code }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-check form-switch mb-4 p-3 bg-light rounded-3">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" name="is_active" id="edit_active">
+                        <label class="form-check-label fw-bold small">Acesso Ativo</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 shadow-sm fw-bold rounded-3">Salvar Alterações</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form Oculto para Exclusão -->
+<form method="POST" id="deleteStaffForm" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete_staff">
+    <input type="hidden" name="profile_id" id="delete_profile_id">
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let editStaffModal;
+    document.addEventListener('DOMContentLoaded', () => {
+        editStaffModal = new bootstrap.Modal(document.getElementById('editStaffModal'));
+    });
+
+    function editStaff(id, name, role, active) {
+        document.getElementById('edit_profile_id').value = id;
+        document.getElementById('edit_role').value = role;
+        document.getElementById('edit_active').checked = active;
+        document.getElementById('editTitle').innerText = `Ajustes: ${name}`;
+        editStaffModal.show();
+    }
+
+    function deleteStaff(id, name) {
+        uiConfirm(
+            'Remover Usuário',
+            `ATENÇÃO: Deseja realmente remover "${name}" da equipe? O acesso será revogado permanentemente.`,
+            () => {
+                document.getElementById('delete_profile_id').value = id;
+                document.getElementById('deleteStaffForm').submit();
+            }
+        );
+    }
+</script>
+{% endblock %}
