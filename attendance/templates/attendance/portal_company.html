@@ -1,6 +1,6 @@
 {% extends 'attendance/portal_base.html' %}
 
-{% block title %}{{ company.name }} | Portal do Capelão{% endblock %}
+{% block title %}{{ company.name }} | Portal Gilberto Ribeiro{% endblock %}
 {% block header_title %}{{ company.name }}{% endblock %}
 
 {% block content %}
@@ -59,7 +59,7 @@
                         <span class="badge bg-success-subtle text-success small">Novo</span>
                     </div>
                     <div class="input-group input-group-sm mb-2">
-                        <input type="text" class="form-control" value="{{ request.scheme }}://{{ request.get_host }}{% url 'company_live_dashboard' company.slug %}" readonly id="livesDashboardLink">
+                        <input type="text" class="form-control bg-light border-0" value="{{ request.scheme }}://{{ request.get_host }}{% url 'company_live_dashboard' company.slug %}" readonly>
                         <a href="{% url 'company_live_dashboard' company.slug %}" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
                     </div>
                     <p class="text-muted small mb-0" style="font-size: 0.75rem;">Link central que reúne todas as transmissões da empresa.</p>
