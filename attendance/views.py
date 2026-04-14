@@ -836,6 +836,8 @@ def youtube_auth(request):
             prompt='consent'
         )
         request.session['oauth_state'] = state
+        # IMPORTANTE: Salvar o verifier para o PKCE não falhar no callback
+        request.session['code_verifier'] = flow.code_verifier
         return redirect(authorization_url)
     except Exception as e:
         from django.contrib import messages
@@ -857,11 +859,19 @@ def youtube_callback(request):
     
     try:
         flow = YouTubeService.get_flow(redirect_uri)
+        
+        # Recupera o verifier salvo no passo anterior
+        flow.code_verifier = request.session.get('code_verifier')
+        
         auth_response = request.build_absolute_uri()
-        if not settings.DEBUG:
+        # Forçamos HTTPS na resposta para o flow.fetch_token não reclamar
+        if 'http:' in auth_response and not settings.DEBUG:
+            auth_response = auth_response.replace('http:', 'https:')
+        elif 'gilberto.luizgustavo.tech' in auth_response:
+            # Caso especial para o seu domínio
             auth_response = auth_response.replace('http:', 'https:')
             
-        print(f"DEBUG YOUTUBE: Auth Response URI: {auth_response}")
+        print(f"DEBUG YOUTUBE: Auth Response URI (Final): {auth_response}")
         
         flow.fetch_token(authorization_response=auth_response)
         
