@@ -100,6 +100,15 @@
         </a>
         {% endif %}
 
+        {% if request.user.is_superuser or request.user.staff_profile.role == 'ADMIN' or request.user.staff_profile.role == 'CONTEUDISTA' %}
+        <a class="nav-link {% if request.resolver_match.url_name == 'portal_gallery' %}active{% endif %}" href="{% url 'portal_gallery' %}">
+            <i class="bi bi-camera"></i> Galeria de Fotos
+        </a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'portal_testimonials' %}active{% endif %}" href="{% url 'portal_testimonials' %}">
+            <i class="bi bi-star"></i> Depoimentos
+        </a>
+        {% endif %}
+
         <a class="nav-link {% if request.resolver_match.url_name == 'portal_saas_settings' %}active{% endif %}" href="{% url 'portal_saas_settings' %}">
             <i class="bi bi-gear"></i> Configurações
         </a>

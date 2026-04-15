@@ -1,0 +1,202 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback | Gilberto Ribeiro & {{ company.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Montserrat:ital,wght@1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-blue: #0f172a;
+            --brand-orange: #f7811e;
+            --bg-light: #f8fafc;
+        }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg-light); color: var(--brand-blue); }
+
+        .partnership-header {
+            background: white;
+            padding: 20px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            margin-bottom: 40px;
+        }
+
+        /* Logos Lado a Lado */
+        .logos-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+        }
+        .divider-line {
+            width: 1px;
+            height: 40px;
+            background: #e2e8f0;
+        }
+        
+        /* Logo Gilberto */
+        .brand-logo-container { display: inline-flex; flex-direction: column; align-items: center; text-decoration: none; }
+        .brand-name { font-family: 'Montserrat', sans-serif; font-weight: 800; font-style: italic; font-size: 1.2rem; color: var(--brand-blue); text-transform: uppercase; letter-spacing: -1px; line-height: 1; }
+        .brand-line { width: 100%; height: 3px; background: var(--brand-orange); margin-top: 3px; border-radius: 2px; }
+
+        /* Logo Empresa */
+        .company-logo { max-height: 45px; max-width: 150px; object-fit: contain; }
+
+        .feedback-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.05);
+            padding: 40px;
+            border: 1px solid rgba(0,0,0,0.05);
+            margin-bottom: 50px;
+        }
+
+        .form-label { font-weight: 700; color: var(--brand-blue); margin-bottom: 8px; font-size: 0.9rem; }
+        .form-control {
+            border-radius: 12px;
+            padding: 12px 20px;
+            border: 2px solid #f1f5f9;
+            background: #f8fafc;
+            transition: 0.3s;
+        }
+        .form-control:focus {
+            border-color: var(--brand-orange);
+            background: white;
+            box-shadow: none;
+        }
+
+        .photo-upload-container {
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+            background: #f8fafc;
+        }
+        .photo-upload-container:hover { border-color: var(--brand-orange); background: #fffaf5; }
+
+        .btn-submit {
+            background: var(--brand-orange);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 18px;
+            font-weight: 700;
+            width: 100%;
+            margin-top: 20px;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn-submit:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(247, 129, 30, 0.2); }
+    </style>
+</head>
+<body>
+
+<header class="partnership-header">
+    <div class="container text-center">
+        <div class="logos-wrapper">
+            <!-- Logo Gilberto -->
+            <div class="brand-logo-container">
+                <span class="brand-name">Gilberto Ribeiro</span>
+                <div class="brand-line"></div>
+            </div>
+            
+            <div class="divider-line"></div>
+            
+            <!-- Logo Empresa -->
+            {% if company.logo_url %}
+                <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="company-logo">
+            {% else %}
+                <span class="fw-bold text-uppercase" style="color: {{ company.primary_color|default:'' }}">{{ company.name }}</span>
+            {% endif %}
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            
+            <div class="feedback-card">
+                <div class="text-center mb-5">
+                    <h2 class="fw-bold h3 mb-2">Sua voz é importante!</h2>
+                    <p class="text-muted">Como nosso trabalho de capelania tem impactado você na <strong>{{ company.name }}</strong>?</p>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form action="{% url 'public_feedback' company.slug %}" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Nome Completo</label>
+                                <input type="text" name="name" class="form-control" placeholder="Seu nome" value="{{ name|default:'' }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Seu Cargo / Função</label>
+                                <input type="text" name="role" class="form-control" placeholder="Ex: Operador Logístico" value="{{ role|default:'' }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Seu Depoimento</label>
+                        <textarea name="message" class="form-control" rows="5" placeholder="Conte-nos como se sente com o suporte do Gilberto..." required>{{ message|default:'' }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Sua Foto (Opcional)</label>
+                        <div class="photo-upload-container" onclick="document.getElementById('photo-input').click()">
+                            <i class="bi bi-camera fs-2 text-muted mb-2 d-block"></i>
+                            <p class="mb-0 text-muted small" id="file-label">Clique ou arraste sua foto aqui</p>
+                            <input type="file" name="photo" id="photo-input" hidden accept="image/*" onchange="updateFileName(this)">
+                        </div>
+                        <p class="text-muted mt-2" style="font-size: 0.75rem;"><i class="bi bi-info-circle me-1"></i>Sua foto ajuda a humanizar seu depoimento em nosso site.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                            <label class="form-check-label small text-muted" for="termsCheck" style="line-height: 1.4; cursor: pointer;">
+                                Estou ciente e autorizo o uso gratuito do meu depoimento e imagem no site institucional <strong>gilbertoribeiro.com.br</strong> para fins de divulgação de impacto social e profissional.
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit shadow-sm" id="submitBtn">Enviar Meu Depoimento</button>
+                </form>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateFileName(input) {
+        let label = document.getElementById('file-label');
+        if (input.files.length > 0) {
+            label.innerHTML = "✅ Foto selecionada: " + input.files[0].name;
+            label.classList.remove('text-muted');
+            label.classList.add('text-success', 'fw-bold');
+        }
+    }
+</script>
+
+</body>
+</html>

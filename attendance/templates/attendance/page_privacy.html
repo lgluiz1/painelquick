@@ -1,0 +1,63 @@
+{% extends "attendance/public_base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+    .privacy-hero {
+        background: var(--bg-light);
+        padding: 60px 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .content-card {
+        background: white;
+        border-radius: 24px;
+        padding: 50px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+        margin: -40px auto 100px;
+        border: 1px solid #e2e8f0;
+        max-width: 900px;
+    }
+
+    .privacy-text h2 { color: var(--brand-blue); font-weight: 800; margin-top: 40px; margin-bottom: 20px; font-size: 1.5rem; }
+    .privacy-text p { color: #1e293b; line-height: 1.8; margin-bottom: 20px; font-size: 1.1rem; }
+    .privacy-text ul { color: #1e293b; line-height: 1.8; margin-bottom: 20px; }
+    .privacy-text li { margin-bottom: 10px; }
+
+    .last-updated { font-size: 0.9rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 15px; display: block; }
+</style>
+
+<div class="privacy-hero text-center">
+    <div class="container">
+        <h1 class="fw-bold reveal">Política de Privacidade</h1>
+    </div>
+</div>
+
+<div class="container">
+    <div class="content-card reveal reveal-delay-1">
+        <span class="last-updated">⏰ Última atualização: Abril de 2026</span>
+        
+        <div class="privacy-text">
+            <p>A privacidade e a proteção de dados são pilares fundamentais do trabalho de Gilberto Ribeiro. Esta Política de Privacidade descreve como coletamos, usamos e protegemos as informações fornecidas por colaboradores e empresas através do nosso portal e site institucional.</p>
+
+            <h2>1. Coleta de Informações</h2>
+            <p>Coletamos informações necessárias para a prestação dos nossos serviços de suporte e capelania, incluindo:</p>
+            <ul>
+                <li><strong>Dados de Identificação:</strong> Nome, e-mail e empresa dos usuários (quando não optado pelo anonimato).</li>
+                <li><strong>Relatos e Suporte:</strong> Informações compartilhadas em formulários de denúncia ou suporte terapêutico.</li>
+            </ul>
+
+            <h2>2. Sigilo Profissional e Ética</h2>
+            <p>Conforme os preceitos éticos da Capelania e da Terapia Holística, todos os relatos sensíveis são tratados com o máximo rigor de sigilo. Informações individuais nunca são compartilhadas com as empresas clientes de forma que identifique o colaborador, a menos que haja risco iminente de vida ou autorização expressa.</p>
+
+            <div class="mt-5 p-4 rounded-4" style="background: var(--bg-light); border-left: 5px solid var(--brand-orange);">
+                <p><strong>Dúvidas?</strong> Entre em contato através do e-mail: <br> <span class="text-primary">{{ config.contact_email }}</span></p>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="{% url 'home' %}" class="btn btn-primary px-5 py-3 rounded-pill fw-bold" style="background: var(--brand-blue); border: none;">REVISAR TERMOS E VOLTAR</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

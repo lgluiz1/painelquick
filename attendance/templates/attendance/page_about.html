@@ -1,0 +1,112 @@
+{% extends "attendance/public_base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+    .about-hero {
+        background: linear-gradient(135deg, var(--brand-blue) 0%, #1e293b 100%);
+        padding: 100px 0;
+        color: white;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .about-hero::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 100px;
+        background: white;
+        clip-path: polygon(0 100%, 100% 100%, 100% 0);
+    }
+
+    .about-content { padding: 80px 0; background: white; }
+    .profile-card {
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+        padding: 40px;
+        margin-top: -150px;
+        position: relative;
+        z-index: 10;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .profile-img-container {
+        width: 180px;
+        height: 180px;
+        margin: -90px auto 30px;
+        border-radius: 50%;
+        border: 8px solid white;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        background-color: #f8fafc;
+    }
+
+    .profile-img-container img { width: 100%; height: 100%; object-fit: cover; }
+
+    .bio-text { font-size: 1.15rem; line-height: 1.8; color: #444; }
+    .bio-highlight { color: var(--brand-orange); font-weight: 700; }
+    
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; }
+    .stat-item { text-align: center; padding: 20px; background: var(--bg-light); border-radius: 16px; }
+    .stat-number { font-size: 2.5rem; font-weight: 800; color: var(--brand-blue); display: block; }
+    .stat-label { color: #64748b; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; }
+</style>
+
+<div class="about-hero">
+    <div class="container">
+        <h1 class="display-4 fw-bold reveal">Especialista em Humanização Corporativa</h1>
+        <p class="lead opacity-75 reveal">Transformando culturas através da ética e do acolhimento.</p>
+    </div>
+</div>
+
+<div class="about-content">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-9">
+                <div class="profile-card reveal">
+                    <div class="profile-img-container">
+                        <img src="{% static 'attendance/img/gilberto_capelao_face.jpg' %}" alt="Gilberto Ribeiro">
+                    </div>
+                    
+                    <div class="text-center mb-5">
+                        <h2 class="fw-bold mb-3">Quem é Gilberto Ribeiro?</h2>
+                        <div style="width: 60px; height: 4px; background: var(--brand-orange); margin: 0 auto;"></div>
+                    </div>
+
+                    <div class="bio-text">
+                        <p>Com anos de experiência atuando no desenvolvimento humano e no ambiente corporativo, Gilberto Ribeiro consolidou-se como uma referência em <strong>Capelania Empresarial</strong> e <strong>Terapia Holística/Cristã</strong>.</p>
+                        
+                        <p>Seu trabalho vai além da consultoria tradicional. Gilberto foca no que há de mais essencial nas organizações: <span class="bio-highlight">o ser humano</span>. Através de palestras, suporte terapêutico presencial e online, ele auxilia empresas a construírem ambientes mais saudáveis, produtivos e éticos.</p>
+
+                        <p>Atuando como associado da <strong>SOBRAPPS</strong>, Gilberto traz uma visão técnica e sensível para o dia a dia das corporações, ajudando líderes e colaboradores a lidarem com os desafios emocionais e espirituais no trabalho moderno.</p>
+                    </div>
+
+                    <div class="stats-grid text-center">
+                        <div class="stat-item reveal">
+                            <span class="stat-number">20+</span>
+                            <span class="stat-label">Anos de Experiência</span>
+                        </div>
+                        <div class="stat-item reveal reveal-delay-1">
+                            <span class="stat-number">50+</span>
+                            <span class="stat-label">Empresas Atendidas</span>
+                        </div>
+                        <div class="stat-item reveal reveal-delay-2">
+                            <span class="stat-number">1k+</span>
+                            <span class="stat-label">Almas Impactadas</span>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-5">
+                        <a href="{% url 'home' %}#contato" class="btn btn-primary px-5 py-3 rounded-pill fw-bold" style="background: var(--brand-blue); border: none;">FALAR COM O GILBERTO</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

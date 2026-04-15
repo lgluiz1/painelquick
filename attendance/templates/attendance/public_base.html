@@ -1,0 +1,188 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gilberto Ribeiro | Bem-estar que Transforma Empresas{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Montserrat:ital,wght@1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f7811e;
+            --dark: #0f172a;
+            --accent: #f7811e;
+            --bg-light: #f8fafc;
+            --brand-blue: #1a3454;
+            --brand-orange: #f7811e;
+        }
+        body { font-family: 'Outfit', sans-serif; background-color: #ffffff; color: var(--dark); overflow-x: hidden; }
+ 
+        /* Estilo do Logo Vivo (Unificado) */
+        .brand-logo-container {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1;
+            padding: 5px;
+            text-decoration: none;
+        }
+        .brand-name {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-style: italic;
+            font-size: 1.5rem;
+            color: var(--brand-blue);
+            margin-bottom: 2px;
+            letter-spacing: -0.5px;
+        }
+        .brand-line {
+            width: 100%;
+            height: 3px;
+            background: var(--brand-orange);
+            border-radius: 50% / 100% 100% 0 0;
+            transform: scaleY(0.6);
+        }
+
+        /* Navbar */
+        .navbar { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); box-shadow: 0 4px 30px rgba(0,0,0,0.03); }
+        .nav-link { font-weight: 500; color: var(--dark) !important; margin: 0 10px; }
+        .btn-cta-nav { background: var(--dark); color: white !important; border-radius: 50px; padding: 8px 25px; }
+
+        /* Animações de Carregamento Premium */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .reveal { animation: fadeInUp 0.8s ease-out forwards; opacity: 0; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        .reveal-delay-1 { animation-delay: 0.2s; }
+        .reveal-delay-2 { animation-delay: 0.4s; }
+        .reveal-delay-3 { animation-delay: 0.6s; }
+
+        footer { background: var(--bg-light); padding: 80px 0 30px; border-top: 1px solid #e2e8f0; }
+        .footer-logo { max-height: 50px; margin-bottom: 20px; }
+        .hover-orange:hover { color: var(--brand-orange) !important; padding-left: 5px; transition: 0.3s; }
+
+        /* Whatsapp Float */
+        .btn-whatsapp-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #25d366;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 10px 30px rgba(37, 211, 102, 0.4);
+            z-index: 1000;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .btn-whatsapp-float:hover { transform: scale(1.1); color: white; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'home' %}">
+            <div class="brand-logo-container">
+                <span class="brand-name">Gilberto Ribeiro</span>
+                <div class="brand-line"></div>
+            </div>
+        </a>
+        <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navContent">
+            <ul class="navbar-nav mx-auto">
+                <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Inicial</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'static_page' 'quem-somos' %}">Sobre</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'static_page' 'pacotes' %}">Soluções</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'static_page' 'duvidas' %}">Dúvidas</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'portal_login' %}">Portal</a></li>
+            </ul>
+            <a href="{% url 'home' %}#contato" class="btn btn-cta-nav">CONTATO</a>
+        </div>
+    </div>
+</nav>
+
+{% block content %}{% endblock %}
+
+<!-- Whatsapp Float -->
+<a href="https://wa.me/{{ config.whatsapp_number }}" target="_blank" class="btn-whatsapp-float">
+    <i class="bi bi-whatsapp"></i>
+</a>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="brand-logo-container">
+                        <span class="brand-name">Gilberto Ribeiro</span>
+                        <div class="brand-line"></div>
+                    </div>
+                </div>
+                <p class="small text-muted mb-4 pe-md-5">Transformando culturas corporativas através da humanização, bem-estar e conformidade.</p>
+                <div class="d-flex gap-3 fs-5 opacity-50">
+                    <a href="https://www.instagram.com/gilbertoribeirocapelania/" target="_blank" class="text-dark"><i class="bi bi-instagram"></i></a>
+                    <a href="https://www.linkedin.com/in/gilberto-ribeiro-b1686933/" target="_blank" class="text-dark"><i class="bi bi-linkedin"></i></a>
+                </div>
+            </div>
+            <div class="col-md-4 ps-md-5 text-center text-md-start">
+                <h6 class="fw-bold mb-4">Saiba Mais</h6>
+                <ul class="list-unstyled small d-grid gap-2 text-muted">
+                    <li><a href="{% url 'static_page' 'quem-somos' %}" class="text-decoration-none text-muted hover-orange">Quem Somos Nós?</a></li>
+                    <li><a href="{% url 'static_page' 'pacotes' %}" class="text-decoration-none text-muted hover-orange">Nossos Pacotes de Solução</a></li>
+                    <li><a href="{% url 'static_page' 'duvidas' %}" class="text-decoration-none text-muted hover-orange">Dúvidas Frequentes</a></li>
+                    <li><a href="{% url 'static_page' 'privacidade' %}" class="text-decoration-none text-muted hover-orange">Política de Privacidade</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 text-center text-md-start">
+                <h6 class="fw-bold mb-4">Contato</h6>
+                <p class="small text-muted mb-2"><i class="bi bi-geo-alt me-2"></i>{{ config.address }}</p>
+                <p class="small text-muted mb-2"><i class="bi bi-telephone me-2"></i>+55 {{ config.whatsapp_number }}</p>
+                <p class="small text-muted"><i class="bi bi-envelope me-2"></i>{{ config.contact_email }}</p>
+            </div>
+        </div>
+        <hr class="my-5 opacity-10">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center small text-muted">
+            <div class="mb-2 mb-md-0">
+                © 2026 Gilberto Ribeiro. Todos os direitos reservados.
+            </div>
+            <div>
+                Desenvolvido por <a href="https://luizgustavo.tech" target="_blank" class="text-primary text-decoration-none fw-bold">luizgustavo.tech</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function reveal() {
+        var reveals = document.querySelectorAll(".reveal");
+        for (var i = 0; i < reveals.length; i++) {
+            var windowHeight = window.innerHeight;
+            var elementTop = reveals[i].getBoundingClientRect().top;
+            var elementVisible = 100;
+            if (elementTop < windowHeight - elementVisible) {
+                reveals[i].classList.add("active");
+            }
+        }
+    }
+    window.addEventListener("scroll", reveal);
+    window.onload = reveal;
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

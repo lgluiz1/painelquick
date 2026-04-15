@@ -1,0 +1,130 @@
+{% extends "attendance/portal_base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 mb-4" style="border-radius: 20px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="fw-bold mb-1" style="color: #0f172a;">🌟 Gestão de Depoimentos</h2>
+                            <p class="text-muted mb-0">Modere e selecione os depoimentos que aparecerão no seu site.</p>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light">
+                                <tr class="text-muted">
+                                    <th class="border-0 rounded-start text-uppercase small fw-bold">Colaborador</th>
+                                    <th class="border-0 text-uppercase small fw-bold">Empresa / Cargo</th>
+                                    <th class="border-0 text-uppercase small fw-bold" style="width: 35%;">Depoimento</th>
+                                    <th class="border-0 text-uppercase small fw-bold">Status</th>
+                                    <th class="border-0 text-uppercase small fw-bold">Destaque?</th>
+                                    <th class="border-0 rounded-end text-uppercase small fw-bold text-end">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for testimonial in testimonials %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                {% if testimonial.photo %}
+                                                    <img src="{{ testimonial.photo.url }}" class="rounded-circle shadow-sm" style="width: 50px; height: 50px; object-fit: cover; border: 2px solid white;">
+                                                {% else %}
+                                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 50px; height: 50px; font-weight: bold; font-size: 1.2rem; border: 2px solid white;">
+                                                        {{ testimonial.name|slice:":1" }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="ms-3">
+                                                <h6 class="mb-0 fw-bold">{{ testimonial.name }}</h6>
+                                                <small class="text-muted">{{ testimonial.created_at|date:"d/m/Y" }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <p class="mb-0 fw-bold" style="color: var(--brand-blue);">{{ testimonial.company_name }}</p>
+                                        <small class="text-muted">{{ testimonial.role }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="text-muted small" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6;">
+                                            "{{ testimonial.message }}"
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if testimonial.is_approved %}
+                                            <span class="badge bg-success-soft text-success rounded-pill px-3 py-2 small">
+                                                <i class="bi bi-check-circle-fill me-1"></i>Aprovado
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning-soft text-warning rounded-pill px-3 py-2 small">
+                                                <i class="bi bi-clock-fill me-1"></i>Pendente
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if testimonial.show_on_home %}
+                                            <span class="text-warning fw-bold small"><i class="bi bi-star-fill me-1"></i> NA HOME</span>
+                                        {% else %}
+                                            <span class="text-muted small"><i class="bi bi-star me-1"></i> Oculto</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            {% if not testimonial.is_approved %}
+                                            <form method="POST">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="approve">
+                                                <input type="hidden" name="testimonial_id" value="{{ testimonial.id }}">
+                                                <button type="submit" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-bold shadow-sm">Aprovar</button>
+                                            </form>
+                                            {% endif %}
+                                            
+                                            <form method="POST">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="toggle_home">
+                                                <input type="hidden" name="testimonial_id" value="{{ testimonial.id }}">
+                                                <button type="submit" class="btn btn-{% if testimonial.show_on_home %}warning{% else %}outline-warning{% endif %} btn-sm rounded-circle shadow-sm" style="width: 35px; height: 35px; padding: 0;" title="Alternar na Home">
+                                                    <i class="bi bi-house-star{% if testimonial.show_on_home %}-fill{% endif %}"></i>
+                                                </button>
+                                            </form>
+
+                                            <form method="POST" onsubmit="return confirm('Excluir este depoimento permanentemente?')">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="testimonial_id" value="{{ testimonial.id }}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle shadow-sm" style="width: 35px; height: 35px; padding: 0;">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <i class="bi bi-chat-left-dots fa-3x text-light mb-3" style="font-size: 3rem;"></i>
+                                        <h5 class="text-muted">Ainda não recebemos depoimentos.</h5>
+                                        <p class="text-muted small">Compartilhe os links de feedback com as empresas clientes!</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-success-soft { background: #dcfce7 !important; border: 1px solid #bbf7d0; }
+    .bg-warning-soft { background: #fef9c3 !important; border: 1px solid #fef08a; }
+    .table-hover tbody tr:hover { background-color: #f8fafc; transition: 0.2s; }
+</style>
+{% endblock %}

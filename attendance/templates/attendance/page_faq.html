@@ -1,0 +1,106 @@
+{% extends "attendance/public_base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+    .faq-hero {
+        background: var(--brand-blue);
+        padding: 80px 0;
+        color: white;
+        text-align: center;
+    }
+
+    .faq-section { padding: 80px 0; background: var(--bg-light); min-height: 500px; }
+
+    .accordion-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px !important;
+        margin-bottom: 15px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+
+    .accordion-button {
+        padding: 25px;
+        font-weight: 700;
+        color: var(--brand-blue);
+        background: white !important;
+        box-shadow: none !important;
+    }
+
+    .accordion-button:not(.collapsed) {
+        color: var(--brand-orange);
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .accordion-body { padding: 25px; line-height: 1.8; color: #475569; font-size: 1.1rem; }
+</style>
+
+<div class="faq-hero">
+    <div class="container">
+        <h1 class="fw-bold mt-3 reveal">Como podemos ajudar?</h1>
+        <p class="lead opacity-75 reveal reveal-delay-1">Encontre respostas para as principais dúvidas sobre Capelania e Suporte Terapêutico.</p>
+    </div>
+</div>
+
+<div class="faq-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                
+                <div class="accordion" id="faqAccordion">
+                    {% if faqs %}
+                        {% for faq in faqs %}
+                        <div class="accordion-item reveal">
+                            <h2 class="accordion-header" id="heading{{ faq.id }}">
+                                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ faq.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ faq.id }}">
+                                    {{ faq.question }}
+                                </button>
+                            </h2>
+                            <div id="collapse{{ faq.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ faq.id }}" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    {{ faq.answer|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="accordion-item reveal">
+                            <h2 class="accordion-header" id="h1">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#c1">
+                                    O que é a Capelania Empresarial?
+                                </button>
+                            </h2>
+                            <div id="c1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    A Capelania Empresarial é um serviço de assistência emocional e espiritual oferecido dentro do ambiente corporativo. O objetivo é promover o bem-estar dos colaboradores, oferecendo acolhimento, escuta ativa e suporte ético e humanizado.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item reveal">
+                            <h2 class="accordion-header" id="h2">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c2">
+                                    Como funciona o atendimento online?
+                                </button>
+                            </h2>
+                            <div id="c2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Os atendimentos online são realizados via plataformas de vídeo seguras e sigilosas. O colaborador agenda seu horário e recebe um suporte terapêutico individualizado, focado em sua saúde mental e equilíbrio emocional, de qualquer lugar.
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="text-center mt-5 reveal">
+                    <p class="text-muted mb-4">Não encontrou o que procurava?</p>
+                    <a href="{% url 'home' %}#contato" class="btn btn-outline-primary px-5 py-3 rounded-pill fw-bold" style="color: var(--brand-blue); border-color: var(--brand-blue);">ENVIAR UMA PERGUNTA DIRETA</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

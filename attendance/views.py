@@ -19,7 +19,7 @@ from .models import (
     Company, Branch, Meeting, Attendance, Course, Evaluation, Question, 
     StudentResponse, StudentAnswer, Complaint, 
     ComplaintCategory, UrgencyLevel, ComplaintUpdate, StaffProfile,
-    Lead, GlobalConfig
+    Lead, GlobalConfig, GalleryImage, Testimonial, FAQItem
 )
 from functools import wraps
 from django.core.exceptions import PermissionDenied
@@ -29,7 +29,7 @@ from django.utils import timezone
 from datetime import datetime
 from django.conf import settings
 
-# --- UTILITÁRIOS ---
+# --- UTILITﾃヽIOS ---
 
 def get_company_by_token(request):
     token = request.headers.get('X-Api-Key')
@@ -43,7 +43,7 @@ def staff_role_required(allowed_roles):
         @wraps(view_func)
         @login_required
         def _wrapped_view(request, *args, **kwargs):
-            # Superusuários têm acesso total bypassando o perfil
+            # Superusuﾃ｡rios tﾃｪm acesso total bypassando o perfil
             if request.user.is_superuser:
                 return view_func(request, *args, **kwargs)
             
@@ -58,7 +58,7 @@ def staff_role_required(allowed_roles):
         return _wrapped_view
     return decorator
 
-# --- API PÚBLICA (COLETA DE DADOS - MULTI-TENANT) ---
+# --- API Pﾃ咤LICA (COLETA DE DADOS - MULTI-TENANT) ---
 
 @csrf_exempt
 def submit_attendance(request):
@@ -67,7 +67,7 @@ def submit_attendance(request):
     
     company = get_company_by_token(request)
     if not company:
-        return JsonResponse({'error': 'Token de Empresa Inválido ou Inativa'}, status=401)
+        return JsonResponse({'error': 'Token de Empresa Invﾃ｡lido ou Inativa'}, status=401)
 
     try:
         data = json.loads(request.body)
@@ -88,21 +88,21 @@ def submit_attendance(request):
             branch=branch_name,
             signature=signature
         )
-        return JsonResponse({'status': 'success', 'message': 'Presença registrada!'})
+        return JsonResponse({'status': 'success', 'message': 'Presenﾃｧa registrada!'})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
 def api_get_active_evaluation(request, course_slug):
     company = get_company_by_token(request)
     if not company:
-        return JsonResponse({'error': 'Token de Empresa Inválido'}, status=401)
+        return JsonResponse({'error': 'Token de Empresa Invﾃ｡lido'}, status=401)
         
     try:
         course = Course.objects.get(company=company, slug=course_slug)
         eval_active = course.evaluations.filter(is_active=True).first()
         
         if not eval_active:
-            return JsonResponse({'error': 'Nenhuma avaliação ativa disponível'}, status=404)
+            return JsonResponse({'error': 'Nenhuma avaliaﾃｧﾃ｣o ativa disponﾃｭvel'}, status=404)
         
         data = {
             'id': eval_active.id,
@@ -112,13 +112,13 @@ def api_get_active_evaluation(request, course_slug):
         }
         return JsonResponse(data)
     except Course.DoesNotExist:
-        return JsonResponse({'error': 'Curso não encontrado'}, status=404)
+        return JsonResponse({'error': 'Curso nﾃ｣o encontrado'}, status=404)
 
 @csrf_exempt
 def api_submit_evaluation(request):
     company = get_company_by_token(request)
     if not company:
-        return JsonResponse({'error': 'Token de Empresa Inválido'}, status=401)
+        return JsonResponse({'error': 'Token de Empresa Invﾃ｡lido'}, status=401)
 
     try:
         data = json.loads(request.body)
@@ -142,10 +142,10 @@ def api_submit_evaluation(request):
 @csrf_exempt
 def api_get_complaint_status(request):
     company = get_company_by_token(request)
-    if not company: return JsonResponse({'error': 'Token Inválido'}, status=401)
+    if not company: return JsonResponse({'error': 'Token Invﾃ｡lido'}, status=401)
     
     ticket_id = request.GET.get('ticket_id')
-    if not ticket_id: return JsonResponse({'error': 'Código obrigatório'}, status=400)
+    if not ticket_id: return JsonResponse({'error': 'Cﾃｳdigo obrigatﾃｳrio'}, status=400)
     
     try:
         complaint = company.complaints.get(ticket_id=ticket_id)
@@ -153,16 +153,16 @@ def api_get_complaint_status(request):
         return JsonResponse({
             'status': complaint.get_status_display(),
             'created_at': complaint.created_at.strftime('%d/%m/%Y'),
-            'response': last_update.message if last_update else "Seu relato está sendo analisado com todo sigilo pelo Capelão."
+            'response': last_update.message if last_update else "Seu relato estﾃ｡ sendo analisado com todo sigilo pelo Capelﾃ｣o."
         })
     except Complaint.DoesNotExist:
-        return JsonResponse({'error': 'Código não encontrado ou não pertence a esta empresa.'}, status=404)
+        return JsonResponse({'error': 'Cﾃｳdigo nﾃ｣o encontrado ou nﾃ｣o pertence a esta empresa.'}, status=404)
 
 @csrf_exempt
 def api_submit_complaint(request):
     company = get_company_by_token(request)
     if not company:
-        return JsonResponse({'error': 'Token de Empresa Inválido'}, status=401)
+        return JsonResponse({'error': 'Token de Empresa Invﾃ｡lido'}, status=401)
 
     try:
         data = json.loads(request.body)
@@ -191,7 +191,7 @@ def api_submit_complaint(request):
 def api_get_branches(request):
     company = get_company_by_token(request)
     if not company:
-        return JsonResponse({'error': 'Token Inválido'}, status=401)
+        return JsonResponse({'error': 'Token Invﾃ｡lido'}, status=401)
     
     branches = company.branches.all().order_by('name')
     return JsonResponse({
@@ -208,7 +208,7 @@ def api_complaint_options(request):
         'branches': [{'id': b.id, 'name': b.name} for b in company.branches.all()]
     })
 
-# --- PORTAL DO CAPELÃO (VISTAS PRINCIPAIS) ---
+# --- PORTAL DO CAPELﾃグ (VISTAS PRINCIPAIS) ---
 
 @csrf_exempt
 def portal_login(request):
@@ -236,12 +236,12 @@ def portal_users(request):
             
             if User.objects.filter(username=username).exists():
                 from django.contrib import messages
-                messages.error(request, f"Usuário {username} já existe.")
+                messages.error(request, f"Usuﾃ｡rio {username} jﾃ｡ existe.")
             else:
                 user = User.objects.create_user(username=username, password=password)
                 StaffProfile.objects.create(user=user, role=role)
                 from django.contrib import messages
-                messages.success(request, f"Usuário {username} criado com cargo {role}.")
+                messages.success(request, f"Usuﾃ｡rio {username} criado com cargo {role}.")
         
         elif action == 'update_staff':
             profile_id = request.POST.get('profile_id')
@@ -257,7 +257,7 @@ def portal_users(request):
             username = profile.user.username
             profile.user.delete() # Deleta user e profile via cascade
             from django.contrib import messages
-            messages.success(request, f"Usuário {username} removido da equipe.")
+            messages.success(request, f"Usuﾃ｡rio {username} removido da equipe.")
             
         return redirect('portal_users')
 
@@ -270,7 +270,7 @@ def portal_users(request):
 @staff_role_required(allowed_roles=['ADMIN', 'AUDITOR'])
 def portal_companies(request):
     if request.method == 'POST':
-        # ... manter lógica de criação/edição/delete existente ...
+        # ... manter lﾃｳgica de criaﾃｧﾃ｣o/ediﾃｧﾃ｣o/delete existente ...
         action = request.POST.get('action')
         if action == 'create_company':
             name = request.POST.get('name')
@@ -286,7 +286,7 @@ def portal_companies(request):
             get_object_or_404(Company, id=request.POST.get('company_id')).delete()
         return redirect('portal_companies')
 
-    # Anotações para a tabela
+    # Anotaﾃｧﾃｵes para a tabela
     companies = Company.objects.all().annotate(
         total_meetings=Count('meetings', distinct=True),
         total_complaints=Count('complaints', distinct=True),
@@ -299,16 +299,22 @@ def portal_companies(request):
     })
 
 def home(request):
-    # --- Landing Page Pública ---
+    # --- Landing Page Pﾃｺblica ---
     config = GlobalConfig.get_solo()
     
-    # 1. Logos de Empresas que confiam (Aleatórios)
-    # Buscamos empresas ativas que possuam logo
+    # 1. Logos de Empresas que confiam (Aleatﾃｳrios)
     trusted_companies = list(Company.objects.filter(is_active=True, logo_url__isnull=False).exclude(logo_url=""))
     random.shuffle(trusted_companies)
-    trusted_companies = trusted_companies[:8] # Mostramos até 8
+    trusted_companies = trusted_companies[:8]
     
-    # 2. Processamento de Lead (Formulário de Contato)
+    # 2. Galeria Dinﾃ｢mica
+    gallery_images = GalleryImage.objects.filter(is_active=True)
+    
+    # 3. Depoimentos Moderados (Aleatﾃｳrios)
+    testimonials = list(Testimonial.objects.filter(is_approved=True, show_on_home=True))
+    random.shuffle(testimonials)
+    
+    # 4. Processamento de Lead
     if request.method == 'POST':
         first_name = request.POST.get('first_name')
         last_name = request.POST.get('last_name')
@@ -318,21 +324,18 @@ def home(request):
         message = request.POST.get('message')
         
         Lead.objects.create(
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            phone=phone,
-            company=company_name,
-            message=message
+            first_name=first_name, last_name=last_name, email=email,
+            phone=phone, company=company_name, message=message
         )
-        # Aqui poderíamos disparar um e-mail de notificação para o config.notify_email
         from django.contrib import messages
-        messages.success(request, "Sua mensagem foi enviada! O Capelão entrará em contato em breve.")
+        messages.success(request, "Sua mensagem foi enviada! O Capelﾃ｣o entrarﾃ｡ em contato em breve.")
         return redirect('home')
 
     return render(request, 'attendance/home.html', {
         'config': config,
         'trusted_companies': trusted_companies,
+        'gallery_images': gallery_images,
+        'testimonials': testimonials,
     })
 
 @staff_role_required(allowed_roles=['ADMIN', 'OUVIDOR', 'CONTEUDISTA', 'AUDITOR'])
@@ -341,7 +344,7 @@ def portal_dashboard(request):
     from livestream.models import LiveAttendance, LiveChatMessage
     from django.db.models import Sum, Max
     
-    # 1. Ranking de Presença (Top 5 Empresas - Últimos 30 dias)
+    # 1. Ranking de Presenﾃｧa (Top 5 Empresas - ﾃ嗟timos 30 dias)
     thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
     
     ranking = Company.objects.all().annotate(
@@ -357,16 +360,16 @@ def portal_dashboard(request):
     
     company_ranking = sorted(company_ranking, key=lambda x: x['score'], reverse=True)[:5]
 
-    # 2. Alertas de Denúncias Não Lidas
+    # 2. Alertas de Denﾃｺncias Nﾃ｣o Lidas
     unread_complaints = Complaint.objects.filter(is_read=False, status='novo').select_related('company').order_by('-created_at')[:10]
     
     # 3. Novos Leads do Site (Contatos)
     recent_leads = Lead.objects.filter(is_read=False).order_by('-created_at')[:5]
 
-    # 4. Avaliações com Prazo (Deadlines)
+    # 4. Avaliaﾃｧﾃｵes com Prazo (Deadlines)
     approaching_evals = Evaluation.objects.filter(is_active=True, end_time__isnull=False).select_related('course__company').order_by('end_time')[:5]
     
-    # 5. Métricas Globais Rápidas
+    # 5. Mﾃｩtricas Globais Rﾃ｡pidas
     total_presences = Attendance.objects.count() + LiveAttendance.objects.count()
 
     context = {
@@ -398,7 +401,7 @@ def portal_company_detail(request, slug):
         'branches': company.branches.all()
     })
 
-# --- GESTÃO DETALHADA ---
+# --- GESTﾃグ DETALHADA ---
 
 @staff_role_required(allowed_roles=['ADMIN', 'CONTEUDISTA'])
 def portal_meetings(request, slug):
@@ -416,7 +419,7 @@ def portal_meetings(request, slug):
             
             start_time = timezone.make_aware(datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M'))
             
-            # Criar a reunião primeiro (como era antes)
+            # Criar a reuniﾃ｣o primeiro (como era antes)
             meeting = Meeting.objects.create(
                 company=company,
                 title=title,
@@ -447,9 +450,9 @@ def portal_meetings(request, slug):
                         meeting.save()
                         messages.success(request, f"Live criada com sucesso no YouTube! ID: {res['broadcast_id']}")
                     else:
-                        messages.error(request, "O YouTube não retornou os dados da live. Verifique as configurações.")
+                        messages.error(request, "O YouTube nﾃ｣o retornou os dados da live. Verifique as configuraﾃｧﾃｵes.")
                 except Exception as e:
-                    messages.error(request, f"Erro crítico ao vincular YouTube: {str(e)}")
+                    messages.error(request, f"Erro crﾃｭtico ao vincular YouTube: {str(e)}")
         
         elif action == 'edit_meeting':
             meeting_id = request.POST.get('meeting_id')
@@ -502,7 +505,7 @@ def portal_meeting_detail(request, slug, pk):
                 meeting.live_event.status = new_status
                 meeting.live_event.save()
         elif action == 'confirm_attendances' and meeting.live_event:
-            # Botão Master/Xerife: Confirma presença de quem está ONLINE agora
+            # Botﾃ｣o Master/Xerife: Confirma presenﾃｧa de quem estﾃ｡ ONLINE agora
             attendances = meeting.live_event.attendances.all()
             count = 0
             for la in attendances:
@@ -510,10 +513,10 @@ def portal_meeting_detail(request, slug, pk):
                     la.is_confirmed = True
                     la.save()
                     count += 1
-            # Poderíamos adicionar uma mensagem de sucesso aqui via messages framework
+            # Poderﾃｭamos adicionar uma mensagem de sucesso aqui via messages framework
         return redirect('portal_meeting_detail', slug=slug, pk=pk)
     
-    # Calcular estatísticas da live se existir
+    # Calcular estatﾃｭsticas da live se existir
     live_stats = {
         'total': 0,
         'online': 0,
@@ -591,7 +594,7 @@ def download_template(request, slug, feature):
     company = get_object_or_404(Company, slug=slug)
     
     # Caminho do arquivo na raiz do projeto (fora da pasta backend)
-    # No Docker, a raiz pode estar em caminhos diferentes, mas tentaremos os padrões
+    # No Docker, a raiz pode estar em caminhos diferentes, mas tentaremos os padrﾃｵes
     file_map = {
         'presenca': 'presenca.html',
         'denuncia': 'denuncia.html',
@@ -599,7 +602,7 @@ def download_template(request, slug, feature):
     }
     
     filename = file_map.get(feature)
-    if not filename: return HttpResponse("Tipo inválido", status=400)
+    if not filename: return HttpResponse("Tipo invﾃ｡lido", status=400)
     
     # Tenta localizar o arquivo
     possible_paths = [
@@ -615,14 +618,14 @@ def download_template(request, slug, feature):
             break
             
     if not content:
-        return HttpResponse(f"Arquivo base {filename} não encontrado no servidor.", status=404)
+        return HttpResponse(f"Arquivo base {filename} nﾃ｣o encontrado no servidor.", status=404)
     
-    # SUBSTITUIÇÕES MÁGICAS:
+    # SUBSTITUIﾃ�髭S Mﾃ；ICAS:
     # 1. Token da Empresa
     content = content.replace('YOUR_X_API_KEY_HERE', company.api_token)
-    content = content.replace('TOKEN_AQUI', company.api_token) # Variável comum que podemos ter usado
+    content = content.replace('TOKEN_AQUI', company.api_token) # Variﾃ｡vel comum que podemos ter usado
     
-    # 2. URL do Servidor (Baseado no seu domínio atual)
+    # 2. URL do Servidor (Baseado no seu domﾃｭnio atual)
     content = content.replace('http://localhost:8000', 'https://gilberto.luizgustavo.tech')
     content = content.replace('https://seu-servidor.com', 'https://gilberto.luizgustavo.tech')
     
@@ -635,7 +638,7 @@ def download_template(request, slug, feature):
     response['Content-Disposition'] = f'attachment; filename="{feature}_{company.slug}.html"'
     return response
 
-# --- PÁGINAS HOSPEDADAS ---
+# --- Pﾃ；INAS HOSPEDADAS ---
 
 def hosted_form(request, company_slug, feature):
     company = get_object_or_404(Company, slug=company_slug)
@@ -652,7 +655,7 @@ def hosted_form(request, company_slug, feature):
             'urgencies': UrgencyLevel.objects.filter(company__isnull=True)
         })
     elif feature == 'avaliacao':
-        # Carregado via JS no template para suportar o curso dinâmico
+        # Carregado via JS no template para suportar o curso dinﾃ｢mico
         pass
         
     return render(request, f'attendance/public_{feature}.html', context)
@@ -740,7 +743,7 @@ def export_meeting_excel(request, slug, pk):
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Lista de Presença"
+    ws.title = "Lista de Presenﾃｧa"
 
     headers = ['Nome', 'Filial', 'Data de Registro']
     ws.append(headers)
@@ -753,6 +756,7 @@ def export_meeting_excel(request, slug, pk):
     wb.save(response)
     return response
 
+@login_required
 @login_required
 def export_meeting_pdf(request, slug, pk):
     meeting = get_object_or_404(Meeting, pk=pk, company__slug=slug)
@@ -778,6 +782,8 @@ def export_meeting_pdf(request, slug, pk):
 def portal_saas_settings(request):
     from livestream.models import YouTubeConfig
     from django.contrib import messages
+    global_config = GlobalConfig.get_solo()
+    
     # Verificação de arquivo físico na VPS
     import os
     from django.conf import settings
@@ -814,6 +820,7 @@ def portal_saas_settings(request):
         'categories': ComplaintCategory.objects.filter(company__isnull=True).order_by('name'),
         'urgencies': UrgencyLevel.objects.filter(company__isnull=True),
         'youtube_config': YouTubeConfig.get_solo(),
+        'global_config': global_config,
         'has_secrets_file': has_secrets_file,
     }
     return render(request, 'attendance/portal_saas_settings.html', context)
@@ -914,6 +921,7 @@ def youtube_callback(request):
         
     return redirect('portal_saas_settings')
 
+
 @staff_role_required(allowed_roles=['ADMIN'])
 def disconnect_youtube(request):
     """Desvincula a conta do YouTube."""
@@ -924,7 +932,7 @@ def disconnect_youtube(request):
     config.channel_title = None
     config.channel_thumbnail = None
     config.save()
-    messages.info(request, "Serviço do YouTube desvinculado com sucesso.")
+    messages.info(request, "Serviﾃｧo do YouTube desvinculado com sucesso.")
     return redirect('portal_saas_settings')
 
 def portal_logout(request):
@@ -944,21 +952,21 @@ def export_global_report_excel(request):
     # Planilha 1: Dashboard Geral
     ws_dash = wb.active
     ws_dash.title = "Dashboard Geral"
-    ws_dash.append(['RELATÓRIO CONSOLIDADO - PORTAL DO CAPELÃO'])
-    ws_dash.append(['Data de Geração:', timezone.now().strftime('%d/%m/%Y %H:%M')])
+    ws_dash.append(['RELATﾃ迭IO CONSOLIDADO - PORTAL DO CAPELﾃグ'])
+    ws_dash.append(['Data de Geraﾃｧﾃ｣o:', timezone.now().strftime('%d/%m/%Y %H:%M')])
     ws_dash.append([])
-    ws_dash.append(['Empresa', 'Reuniões Totais', 'Total de Denúncias', 'Denúncias Pendentes'])
+    ws_dash.append(['Empresa', 'Reuniﾃｵes Totais', 'Total de Denﾃｺncias', 'Denﾃｺncias Pendentes'])
     
     for c in companies:
         ws_dash.append([c.name, c.total_meetings, c.total_complaints, c.pending_complaints])
         
-    # Colunas auto-ajustáveis básicas
+    # Colunas auto-ajustﾃ｡veis bﾃ｡sicas
     for col in range(1, 5):
         ws_dash.column_dimensions[chr(64+col)].width = 20
     
-    # Planilha 2: Todas as Denúncias Pendentes
-    ws_comp = wb.create_sheet(title="Denúncias Pendentes")
-    ws_comp.append(['Empresa', 'Ticket', 'Filial', 'Categoria', 'Urgência', 'Data'])
+    # Planilha 2: Todas as Denﾃｺncias Pendentes
+    ws_comp = wb.create_sheet(title="Denﾃｺncias Pendentes")
+    ws_comp.append(['Empresa', 'Ticket', 'Filial', 'Categoria', 'Urgﾃｪncia', 'Data'])
     
     pending_list = Complaint.objects.filter(status='novo').select_related('company', 'category', 'urgency').order_by('-created_at')
     for comp in pending_list:
@@ -975,3 +983,91 @@ def export_global_report_excel(request):
     response['Content-Disposition'] = 'attachment; filename=relatorio_global_capelao.xlsx'
     wb.save(response)
     return response
+
+# --- NOVAS FUNCIONALIDADES DINﾂMICAS ---
+
+@staff_role_required(allowed_roles=['ADMIN', 'CONTEUDISTA'])
+def portal_gallery(request):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'upload':
+            files = request.FILES.getlist('images')
+            for f in files:
+                GalleryImage.objects.create(image=f)
+        elif action == 'delete':
+            img_id = request.POST.get('image_id')
+            get_object_or_404(GalleryImage, id=img_id).delete()
+        return redirect('portal_gallery')
+
+    images = GalleryImage.objects.all()
+    return render(request, 'attendance/portal_gallery.html', {'images': images})
+
+@staff_role_required(allowed_roles=['ADMIN', 'CONTEUDISTA'])
+def portal_testimonials(request):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        test_id = request.POST.get('testimonial_id')
+        testimonial = get_object_or_404(Testimonial, id=test_id)
+        
+        if action == 'approve':
+            testimonial.is_approved = True
+            testimonial.save()
+        elif action == 'toggle_home':
+            testimonial.show_on_home = not testimonial.show_on_home
+            testimonial.save()
+        elif action == 'delete':
+            testimonial.delete()
+        return redirect('portal_testimonials')
+
+    testimonials = Testimonial.objects.all().order_by('-created_at')
+    return render(request, 'attendance/portal_testimonials.html', {'testimonials': testimonials})
+
+def public_feedback(request, company_slug):
+    from django.contrib import messages
+    company = get_object_or_404(Company, slug=company_slug)
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        role = request.POST.get('role')
+        message = request.POST.get('message')
+        photo = request.FILES.get('photo')
+        
+        try:
+            Testimonial.objects.create(
+                company_related=company,
+                company_name=company.name,
+                name=name,
+                role=role,
+                message=message,
+                photo=photo
+            )
+            return render(request, 'attendance/public_feedback_success.html', {'company': company})
+        except Exception as e:
+            messages.error(request, f"Erro ao enviar depoimento: {str(e)}")
+            # Retorna para a página com os dados para não perder o preenchimento
+            return render(request, 'attendance/public_feedback.html', {
+                'company': company,
+                'name': name,
+                'role': role,
+                'message': message
+            })
+        
+    return render(request, 'attendance/public_feedback.html', {'company': company})
+
+def static_page(request, page_name):
+    config = GlobalConfig.get_solo()
+    template_map = {
+        'quem-somos': 'attendance/page_about.html',
+        'pacotes': 'attendance/page_packages.html',
+        'duvidas': 'attendance/page_faq.html',
+        'privacidade': 'attendance/page_privacy.html',
+    }
+    
+    template = template_map.get(page_name)
+    if not template:
+        return redirect('home')
+        
+    context = {'config': config}
+    if page_name == 'duvidas':
+        context['faqs'] = FAQItem.objects.filter(is_active=True)
+        
+    return render(request, template, context)

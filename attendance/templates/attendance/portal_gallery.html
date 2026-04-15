@@ -1,0 +1,84 @@
+{% extends "attendance/portal_base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 mb-4" style="border-radius: 20px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="fw-bold mb-1" style="color: #0f172a;">🖼️ Galeria de Fotos</h2>
+                            <p class="text-muted mb-0">Gerencie as imagens que aparecem na Home do seu site.</p>
+                        </div>
+                        <button class="btn btn-primary px-4 py-2 rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                            + SUBIR NOVAS IMAGENS
+                        </button>
+                    </div>
+
+                    <div class="alert alert-info py-3 border-0 rounded-4 mb-4" style="background: #e0f2fe; color: #0369a1;">
+                        <i class="fas fa-magic me-2"></i> <strong>Poder do Redimensionamento Ativo:</strong> Nosso sistema corta e ajusta suas fotos automaticamente para 800x600px para manter o site sempre elegante!
+                    </div>
+
+                    <div class="row g-4">
+                        {% for img in images %}
+                        <div class="col-xl-3 col-lg-4 col-md-6">
+                            <div class="card h-100 border-0 shadow-sm overflow-hidden" style="border-radius: 16px;">
+                                <div style="height: 180px; overflow: hidden; position: relative;">
+                                    <img src="{{ img.image.url }}" class="w-100 h-100" style="object-fit: cover;">
+                                    <div class="position-absolute top-0 end-0 p-2">
+                                        <form method="POST" onsubmit="return confirm('Deseja realmente remover esta foto?')">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="image_id" value="{{ img.id }}">
+                                            <button type="submit" class="btn btn-danger btn-sm rounded-circle shadow" style="width: 32px; height: 32px; padding: 0;">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                <div class="card-body p-3 text-center">
+                                    <span class="badge bg-light text-dark border">Foto #{{ img.id }}</span>
+                                    <p class="small text-muted mb-0 mt-2">Adicionada em {{ img.created_at|date:"d/m/Y" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-5">
+                            <i class="far fa-images fa-4x text-light mb-3"></i>
+                            <h4 class="text-muted">Sua galeria está vazia.</h4>
+                            <p class="text-muted">Suba suas primeiras fotos de treinamentos e palestras!</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Upload -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 24px;">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h4 class="fw-bold mb-0">Subir Imagens</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" enctype="multipart/form-data" class="p-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="upload">
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Selecione uma ou mais fotos</label>
+                    <input type="file" name="images" class="form-control" multiple accept="image/*" required style="border-radius: 12px; padding: 12px; border: 2px dashed #cbd5e1;">
+                </div>
+                <div class="alert alert-warning small border-0 py-2">
+                    Dica: Escolha fotos do "dia a dia" do seu trabalho para gerar mais confiança nos novos clientes.
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold">INICIAR UPLOAD AGORA</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

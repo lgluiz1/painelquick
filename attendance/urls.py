@@ -34,6 +34,12 @@ urlpatterns = [
     path('portal/company/<slug:slug>/complaints/<int:pk>/', views.portal_complaint_detail, name='portal_complaint_detail'),
     path('portal/company/<slug:slug>/download/<str:feature>/', views.download_template, name='download_template'),
 
+    # --- NOVAS FUNCIONALIDADES DINÂMICAS ---
+    path('portal/gallery/', views.portal_gallery, name='portal_gallery'),
+    path('portal/testimonials/', views.portal_testimonials, name='portal_testimonials'),
+    path('p/<slug:company_slug>/feedback/', views.public_feedback, name='public_feedback'),
+    path('pagina/<str:page_name>/', views.static_page, name='static_page'),
+
     # --- PÁGINAS HOSPEDADAS (PÚBLICAS PARA EMPRESAS) ---
     path('p/<slug:company_slug>/<str:feature>/', views.hosted_form, name='hosted_form'),
 

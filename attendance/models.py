@@ -249,6 +249,88 @@ class Lead(models.Model):
         verbose_name = "Lead / Contato Site"
         verbose_name_plural = "Leads / Contatos Site"
 
+class GalleryImage(models.Model):
+    image = models.ImageField(upload_to='gallery/', verbose_name="Imagem")
+    caption = models.CharField(max_length=255, blank=True, verbose_name="Legenda")
+    is_active = models.BooleanField(default=True, verbose_name="Ativa?")
+    order = models.PositiveIntegerField(default=0, verbose_name="Ordem")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.image:
+            from PIL import Image
+            img = Image.open(self.image.path)
+            
+            # Tamanho padrão do site: 800x600 (4:3) para manter harmonia
+            target_width = 800
+            target_height = 600
+            
+            # Redimensionamento inteligente (Crop & Resize)
+            width, height = img.size
+            target_ratio = target_width / target_height
+            current_ratio = width / height
+
+            if current_ratio > target_ratio:
+                # Muito largo, corta as laterais
+                new_width = int(target_ratio * height)
+                offset = (width - new_width) / 2
+                img = img.crop((offset, 0, width - offset, height))
+            elif current_ratio < target_ratio:
+                # Muito alto, corta o topo/fundo
+                new_height = int(width / target_ratio)
+                offset = (height - new_height) / 2
+                img = img.crop((0, offset, width, height - offset))
+            
+            img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            img.save(self.image.path, quality=85, optimize=True)
+
+    class Meta:
+        verbose_name = "Foto da Galeria"
+        verbose_name_plural = "Fotos da Galeria"
+        ordering = ['order', '-created_at']
+
+class Testimonial(models.Model):
+    company_related = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, blank=True, related_name='received_testimonials')
+    name = models.CharField(max_length=150, verbose_name="Nome do Colaborador")
+    role = models.CharField(max_length=150, verbose_name="Cargo")
+    company_name = models.CharField(max_length=150, verbose_name="Empresa")
+    message = models.TextField(verbose_name="Depoimento")
+    photo = models.ImageField(upload_to='testimonials/', null=True, blank=True, verbose_name="Foto de Perfil")
+    is_approved = models.BooleanField(default=False, verbose_name="Aprovado?")
+    show_on_home = models.BooleanField(default=False, verbose_name="Exibir na Home?")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.photo:
+            from PIL import Image
+            img = Image.open(self.photo.path)
+            if img.height > 300 or img.width > 300:
+                img.thumbnail((300, 300), Image.Resampling.LANCZOS)
+                img.save(self.photo.path, quality=85)
+
+    def __str__(self):
+        return f"{self.name} ({self.company_name})"
+
+    class Meta:
+        verbose_name = "Depoimento"
+        verbose_name_plural = "Depoimentos"
+
+class FAQItem(models.Model):
+    question = models.CharField(max_length=255, verbose_name="Pergunta")
+    answer = models.TextField(verbose_name="Resposta")
+    order = models.PositiveIntegerField(default=0, verbose_name="Ordem")
+    is_active = models.BooleanField(default=True, verbose_name="Ativo?")
+
+    def __str__(self):
+        return self.question
+
+    class Meta:
+        verbose_name = "Item de FAQ"
+        verbose_name_plural = "Itens de FAQ"
+        ordering = ['order']
+
 class GlobalConfig(models.Model):
     whatsapp_number = models.CharField(max_length=20, default="5543996404350", verbose_name="WhatsApp do Capelão")
     contact_email = models.EmailField(default="contato@exemplo.com", verbose_name="E-mail de Contato Exibido")

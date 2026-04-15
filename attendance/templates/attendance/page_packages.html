@@ -1,0 +1,127 @@
+{% extends "attendance/public_base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+    .packages-hero {
+        background: linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.9)), url('{% static "attendance/img/hero_bg.jpg" %}') no-repeat center center/cover;
+        padding: 100px 0;
+        color: white;
+        text-align: center;
+    }
+
+    .packages-section { padding: 80px 0; background: var(--bg-light); }
+
+    .package-card {
+        background: white;
+        border-radius: 30px;
+        padding: 50px 40px;
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(0,0,0,0.05);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .package-card:hover { transform: translateY(-15px); box-shadow: 0 30px 60px rgba(0,0,0,0.1); }
+
+    .package-card.featured {
+        background: var(--brand-blue);
+        color: white;
+        transform: scale(1.05);
+        z-index: 5;
+    }
+    
+    .package-card.featured:hover { transform: scale(1.05) translateY(-15px); }
+
+    .badge-pop {
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--brand-orange);
+        color: white;
+        padding: 5px 20px;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+
+    .package-icon { font-size: 3rem; margin-bottom: 20px; display: block; }
+    .package-name { font-size: 1.5rem; font-weight: 800; margin-bottom: 10px; }
+    .package-desc { font-size: 0.95rem; opacity: 0.8; margin-bottom: 30px; }
+    
+    .price-placeholder { font-size: 1.2rem; font-weight: 700; color: var(--brand-orange); margin-bottom: 30px; display: block; }
+
+    .feature-list { list-style: none; padding: 0; margin-top: auto; text-align: left; }
+    .feature-list li { margin-bottom: 15px; font-size: 0.95rem; display: flex; align-items: center; }
+    .feature-list li::before { content: "✓"; color: var(--brand-orange); font-weight: 900; margin-right: 12px; }
+</style>
+
+<div class="packages-hero">
+    <div class="container">
+        <h1 class="display-5 fw-bold reveal">Investimento em Humanização</h1>
+        <p class="lead opacity-75 reveal reveal-delay-1">Escolha a solução ideal para transformar a cultura da sua empresa.</p>
+    </div>
+</div>
+
+<div class="packages-section">
+    <div class="container">
+        <div class="row g-4 justify-content-center">
+            
+            <div class="col-lg-4 col-md-6 reveal">
+                <div class="package-card">
+                    <span class="package-icon">🎤</span>
+                    <h3 class="package-name">Ciclo de Palestras</h3>
+                    <p class="package-desc">Ideal para eventos pontuais, Semanas de SIPAT ou convenções de liderança.</p>
+                    <span class="price-placeholder">Sob Consulta</span>
+                    <ul class="feature-list">
+                        <li>Palestras de 60 a 90 min</li>
+                        <li>Temas: Ética, Humanização e Empatia</li>
+                        <li>Materiais de apoio digital</li>
+                        <li>Q&A ao final da sessão</li>
+                    </ul>
+                    <a href="{% url 'home' %}#contato" class="btn btn-outline-primary mt-4 py-3 rounded-pill fw-bold">SOLICITAR ORÇAMENTO</a>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 reveal reveal-delay-1">
+                <div class="package-card featured">
+                    <span class="badge-pop">MAIS REQUISITADO</span>
+                    <span class="package-icon">🛡️</span>
+                    <h3 class="package-name">Programa de Suporte</h3>
+                    <p class="package-desc">Acompanhamento contínuo para empresas que buscam saúde emocional real.</p>
+                    <span class="price-placeholder">Sob Consulta</span>
+                    <ul class="feature-list">
+                        <li>Atendimento Online Mensal</li>
+                        <li>Capelania via WhatsApp Business</li>
+                        <li>Relatórios de Clima Organizacional</li>
+                        <li>Workshops Trimestrais</li>
+                    </ul>
+                    <a href="{% url 'home' %}#contato" class="btn btn-warning mt-4 py-3 rounded-pill fw-bold" style="background: var(--brand-orange); border: none; color: white;">CONTRATAR AGORA</a>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 reveal reveal-delay-2">
+                <div class="package-card">
+                    <span class="package-icon">🏢</span>
+                    <h3 class="package-name">Capelania In-Company</h3>
+                    <p class="package-desc">Presença física do Gilberto na sua empresa para um acolhimento profundo.</p>
+                    <span class="price-placeholder">Sob Consulta</span>
+                    <ul class="feature-list">
+                        <li>Visitas presenciais programadas</li>
+                        <li>Gabinete de escuta na empresa</li>
+                        <li>Ronda nos setores e filiais</li>
+                        <li>Integração total com o RH</li>
+                    </ul>
+                    <a href="{% url 'home' %}#contato" class="btn btn-outline-primary mt-4 py-3 rounded-pill fw-bold">PERSONALIZAR PLANO</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
