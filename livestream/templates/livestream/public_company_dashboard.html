@@ -6,19 +6,47 @@
     <title>{{ company.name }} | Central de Lives</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@1,700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: {{ company.primary_color|default:"#e63946" }};
+            --primary-color: #f7811e;
+            --brand-blue: #1a3454;
+            --brand-orange: #f7811e;
             --bg-dark: #0f172a;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
         }
 
         body {
-            background-color: #f8fafc;
-            color: var(--text-main);
-            font-family: 'Outfit', sans-serif;
+            background-color: #0c111d;
+            color: #f8fafc;
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+        }
+
+        /* Estilo do Logo Vivo */
+        .brand-logo-container {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1;
+            padding: 5px;
+            text-decoration: none;
+            margin-bottom: 2rem;
+        }
+        .brand-name {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-style: italic;
+            font-size: 2rem;
+            color: #ffffff;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+        .brand-line {
+            width: 100%;
+            height: 4px;
+            background: var(--brand-orange);
+            border-radius: 50% / 100% 100% 0 0;
+            transform: scaleY(0.6);
         }
 
         .hero-banner {
@@ -37,16 +65,17 @@
         }
 
         .video-card {
-            background: white;
-            border: 0;
-            border-radius: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
             overflow: hidden;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             height: 100%;
             display: flex;
             flex-direction: column;
             cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
         .video-card:hover {
@@ -176,9 +205,10 @@
 
     <div class="hero-banner">
         <div class="container">
-            {% if company.logo_url %}
-                <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="company-logo">
-            {% endif %}
+            <div class="brand-logo-container">
+                <span class="brand-name">Gilberto Ribeiro</span>
+                <div class="brand-line"></div>
+            </div>
             <h1 class="fw-bold mb-2">Central de Transmissões</h1>
             <p class="opacity-75">Acesse as reuniões, treinamentos e lives oficiais da {{ company.name }}.</p>
         </div>
