@@ -4,9 +4,9 @@
 {% block content %}
 <!-- Hero Section -->
 <section class="hero-section" id="home">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-7 align-self-center py-5">
+    <div class="container pb-0">
+        <div class="row m-0 p-0">
+            <div class="col-lg-7 align-self-end py-5">
                 <div class="hero-content reveal">
                     <span class="hero-badge" style="background: rgba(247, 129, 30, 0.2); border: 1px solid var(--brand-orange); color: var(--brand-orange); padding: 5px 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; margin-bottom: 20px; display: inline-block; letter-spacing: 1px;">CONFORMIDADE NR-01 & BEM-ESTAR</span>
                     <h1 class="hero-title reveal-delay-1" style="font-size: 3.5rem; font-weight: 700; line-height: 1.1; margin-bottom: 25px;">Saúde emocional e bem-estar que alcança todas as pessoas</h1>
@@ -17,9 +17,9 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-5 align-self-end text-end p-0">
-                <div class="hero-img-container reveal reveal-delay-2">
-                    <img src="{% static 'attendance/img/gilberto_perfil.png' %}" alt="Gilberto Ribeiro" class="hero-img">
+            <div class="col-lg-5 align-self-end text-end p-0 m-0">
+                <div class="hero-img-container reveal reveal-delay-2" style="line-height: 0;">
+                    <img src="{% static 'attendance/img/gilberto_perfil.png' %}" alt="Gilberto Ribeiro" class="hero-img" style="margin-bottom: -5px;">
                 </div>
             </div>
         </div>
@@ -276,14 +276,14 @@
         background: linear-gradient(135deg, #1a3454 0%, #0f172a 100%);
         min-height: 85vh;
         display: flex;
-        align-items: center;
+        align-items: flex-end;
         color: white;
         position: relative;
-        padding: 80px 0 0 0;
+        padding: 80px 0 0 0 !important;
         overflow: hidden;
     }
-    .hero-content { position: relative; z-index: 2; padding-bottom: 80px; }
-    .hero-img-container { position: relative; z-index: 1; display: flex; align-items: flex-end; justify-content: center; height: 100%; margin-top: auto; }
+    .hero-content { position: relative; z-index: 2; padding-bottom: 100px; }
+    .hero-img-container { position: relative; z-index: 1; display: flex; align-items: flex-end; justify-content: center; height: 100%; margin-top: auto; line-height: 0; }
     .hero-img { width: 120%; max-width: 750px; filter: drop-shadow(0 -5px 40px rgba(0,0,0,0.5)); transition: 0.5s; transform-origin: bottom; display: block; margin-bottom: -2px; }
     .hero-img:hover { transform: scale(1.02); }
 
