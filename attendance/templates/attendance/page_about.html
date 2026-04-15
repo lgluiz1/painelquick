@@ -88,15 +88,15 @@
 
                     <div class="stats-grid text-center">
                         <div class="stat-item reveal">
-                            <span class="stat-number">20+</span>
+                            <span class="stat-number">{{ experience_years }}+</span>
                             <span class="stat-label">Anos de Experiência</span>
                         </div>
                         <div class="stat-item reveal reveal-delay-1">
-                            <span class="stat-number">50+</span>
+                            <span class="stat-number">{{ companies_count }}+</span>
                             <span class="stat-label">Empresas Atendidas</span>
                         </div>
                         <div class="stat-item reveal reveal-delay-2">
-                            <span class="stat-number">1k+</span>
+                            <span class="stat-number">{% if impacted_souls > 1000 %}{{ impacted_souls|divisibleby:1000|yesno:" , " }}{{ impacted_souls|stringformat:".1k" }}{% else %}{{ impacted_souls }}{% endif %}+</span>
                             <span class="stat-label">Almas Impactadas</span>
                         </div>
                     </div>

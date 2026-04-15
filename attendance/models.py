@@ -337,7 +337,9 @@ class GlobalConfig(models.Model):
     notify_email = models.EmailField(default="admin@exemplo.com", verbose_name="E-mail que recebe notificações")
     
     # Campo para endereço ou outra info que queira dinamizar
-    address = models.TextField(default="Rua Gualuvira, 265, Londrina - PR", verbose_name="Endereço no Rodapé")
+    
+    address = models.TextField(default="Av. Des. Mário da Silva Nunes, 717 - Jardim Limoeiro, Serra - ES, 29164-044", verbose_name="Endereço no Rodapé")
+    formation_year = models.IntegerField(default=2004, verbose_name="Ano de Formação na Capelania")
 
     updated_at = models.DateTimeField(auto_now=True)
 

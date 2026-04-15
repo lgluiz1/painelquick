@@ -736,7 +736,7 @@ def export_evaluation_pdf(request, slug, pk):
         return response
     return HttpResponse("Erro ao gerar PDF", status=500)
 
-@staff_role_required(allowed_roles=['ADMIN', 'AUDITOR'])
+@staff_role_required(allowed_roles=['ADMIN', 'AUDITOR', 'OUVIDOR'])
 def export_meeting_excel(request, slug, pk):
     meeting = get_object_or_404(Meeting, pk=pk, company__slug=slug)
     attendances = meeting.attendances.all().order_by('-created_at')
@@ -756,8 +756,7 @@ def export_meeting_excel(request, slug, pk):
     wb.save(response)
     return response
 
-@login_required
-@login_required
+@staff_role_required(allowed_roles=['ADMIN', 'AUDITOR', 'OUVIDOR'])
 def export_meeting_pdf(request, slug, pk):
     meeting = get_object_or_404(Meeting, pk=pk, company__slug=slug)
     attendances = meeting.attendances.all().order_by('name')
@@ -778,8 +777,9 @@ def export_meeting_pdf(request, slug, pk):
         return response
     return HttpResponse("Erro ao gerar PDF", status=500)
 
-@staff_role_required(allowed_roles=['ADMIN'])
+@staff_role_required(allowed_roles=['ADMIN', 'CONTEUDISTA'])
 def portal_saas_settings(request):
+    from .models import FAQItem
     from livestream.models import YouTubeConfig
     from django.contrib import messages
     global_config = GlobalConfig.get_solo()
@@ -798,9 +798,24 @@ def portal_saas_settings(request):
             global_config.contact_email = request.POST.get('contact_email')
             global_config.notify_email = request.POST.get('notify_email')
             global_config.address = request.POST.get('address')
+            global_config.formation_year = request.POST.get('formation_year', 2004)
             global_config.save()
             messages.success(request, "Configurações Globais atualizadas!")
             
+        elif action == 'add_faq':
+            question = request.POST.get('question')
+            answer = request.POST.get('answer')
+            if question and answer:
+                FAQItem.objects.create(question=question, answer=answer)
+                messages.success(request, "Nova pergunta adicionada ao FAQ!")
+            else:
+                messages.error(request, "Preencha pergunta e resposta.")
+
+        elif action == 'delete_faq':
+            faq_id = request.POST.get('faq_id')
+            FAQItem.objects.filter(id=faq_id).delete()
+            messages.success(request, "Pergunta removida do FAQ.")
+
         elif action == 'add_category':
             ComplaintCategory.objects.create(name=request.POST.get('name'), company=None)
         elif action == 'delete_category':
@@ -822,6 +837,7 @@ def portal_saas_settings(request):
         'youtube_config': YouTubeConfig.get_solo(),
         'global_config': global_config,
         'has_secrets_file': has_secrets_file,
+        'faqs': FAQItem.objects.all().order_by('order', '-id'),
     }
     return render(request, 'attendance/portal_saas_settings.html', context)
 
@@ -939,7 +955,7 @@ def portal_logout(request):
     logout(request)
     return redirect('portal_login')
 
-@staff_role_required(allowed_roles=['ADMIN', 'AUDITOR'])
+@staff_role_required(allowed_roles=['ADMIN', 'AUDITOR', 'OUVIDOR'])
 def export_global_report_excel(request):
     companies = Company.objects.all().annotate(
         total_meetings=Count('meetings', distinct=True),
@@ -1067,6 +1083,24 @@ def static_page(request, page_name):
         return redirect('home')
         
     context = {'config': config}
+    
+    if page_name == 'quem-somos':
+        from django.utils import timezone
+        from .models import Branch, Complaint, Attendance, Testimonial
+        
+        # 1. Anos de Experiência
+        current_year = timezone.now().year
+        context['experience_years'] = current_year - config.formation_year
+        
+        # 2. Empresas Atendidas (Filiais)
+        context['companies_count'] = Branch.objects.count()
+        
+        # 3. Almas Impactadas (Soma de tudo)
+        denuncias = Complaint.objects.count()
+        presencas = Attendance.objects.count()
+        depoimentos = Testimonial.objects.count()
+        context['impacted_souls'] = denuncias + presencas + depoimentos
+
     if page_name == 'duvidas':
         context['faqs'] = FAQItem.objects.filter(is_active=True)
         
