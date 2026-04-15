@@ -48,8 +48,8 @@
         /* Navbar */
         .navbar { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); box-shadow: 0 4px 30px rgba(0,0,0,0.03); }
         .nav-link { font-weight: 500; color: var(--dark) !important; margin: 0 10px; }
-        .btn-cta-nav { background: var(--dark); color: white !important; border-radius: 50px; padding: 8px 25px; }
-
+        .btn-cta-nav { background: var(--dark); color: var(--brand-orange) !important;  border-radius: 50px; padding: 8px 25px; }
+        .btn-cta-nav:hover { border: 2px solid var(--brand-orange) !important;}
         /* Animações de Carregamento Premium */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(30px); }
@@ -64,6 +64,8 @@
         footer { background: var(--bg-light); padding: 80px 0 30px; border-top: 1px solid #e2e8f0; }
         .footer-logo { max-height: 50px; margin-bottom: 20px; }
         .hover-orange:hover { color: var(--brand-orange) !important; padding-left: 5px; transition: 0.3s; }
+        .hero-btn-black { background: var(--brand-orange); color: var(--dark); border-radius: 50px; padding: 15px 40px; font-weight: 700; text-decoration: none; transition: 0.3s; box-shadow: 0 10px 30px rgba(247, 129, 30, 0.3); display: inline-block; border: 2px solid var(--brand-orange); }
+        .hero-btn-black:hover { background: transparent; color: var(--dark); border-color: var(--dark); transform: translateY(-3px); }
 
         /* Whatsapp Float */
         .btn-whatsapp-float {
