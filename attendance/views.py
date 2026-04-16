@@ -54,7 +54,9 @@ def staff_role_required(allowed_roles):
             except StaffProfile.DoesNotExist:
                 pass
             
-            raise PermissionDenied
+            from django.contrib import messages
+            messages.error(request, "VOCE_NAO_TEM_PERMISSAO")
+            return redirect('portal_dashboard')
         return _wrapped_view
     return decorator
 
